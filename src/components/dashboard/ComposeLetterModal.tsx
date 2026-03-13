@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 interface Recipient {
   id: string;
   display_label: string;
+  is_active: boolean;
+  created_at: string;
+  use_count: number;
 }
 
 interface Question {
