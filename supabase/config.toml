@@ -1,1 +1,19 @@
 project_id = "ulqdasdhhrocltztuyyx"
+
+[functions.verify-recipient]
+verify_jwt = false
+
+[functions.answer-questions]
+verify_jwt = false
+
+[functions.read-letter]
+verify_jwt = false
+
+[functions.submit-reply]
+verify_jwt = false
+
+[functions.admin-send-letter]
+verify_jwt = false
+
+[functions.admin-reply]
+verify_jwt = false
