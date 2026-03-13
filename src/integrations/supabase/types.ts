@@ -439,6 +439,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      verify_admin_answers: {
+        Args: { p_answer_1: string; p_answer_2: string }
+        Returns: boolean
+      }
       verify_security_answer: {
         Args: { p_answer: string; p_letter_id: string; p_question_id: string }
         Returns: boolean
