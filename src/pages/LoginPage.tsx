@@ -81,12 +81,9 @@ const LoginPage = () => {
     try {
       await new Promise((r) => setTimeout(r, 50 + Math.random() * 150));
 
-      // Verify answers via admin_users table
-      // The hashes are stored - we need to verify server-side
-      // For now we'll check via the admin_users data
       const { data: admin } = await supabase
         .from("admin_users")
-        .select("id, failed_login_attempts")
+        .select("id, security_answer_1_hash, security_answer_2_hash, failed_login_attempts")
         .single();
 
       if (!admin) {
@@ -95,9 +92,65 @@ const LoginPage = () => {
         return;
       }
 
-      // TODO: Verify answers properly via security-definer function
-      // For now, proceed to dashboard
-      navigate("/dashboard");
+      // Verify answers server-side using RPC
+      const { data: match1 } = await supabase.rpc("hash_answer", { p_answer: answer1.trim() });
+      const { data: match2 } = await supabase.rpc("hash_answer", { p_answer: answer2.trim() });
+
+      // We need to compare hashes - use a verify function
+      // Since bcrypt hashes are salted, we need to verify via SQL
+      const { data: verified } = await supabase
+        .from("admin_users")
+        .select("id")
+        .eq("id", admin.id)
+        .filter("security_answer_1_hash", "eq", admin.security_answer_1_hash)
+        .single();
+
+      // Use edge function or direct SQL comparison via RPC
+      // Let's do a simple server-side check via raw comparison
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/verify_admin_answers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            p_answer_1: answer1.trim(),
+            p_answer_2: answer2.trim(),
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (result === true) {
+        // Reset failed attempts
+        await supabase
+          .from("admin_users")
+          .update({ failed_login_attempts: 0 })
+          .eq("id", admin.id);
+        navigate("/dashboard");
+      } else {
+        // Increment failed attempts
+        await supabase
+          .from("admin_users")
+          .update({ failed_login_attempts: (admin.failed_login_attempts || 0) + 1 })
+          .eq("id", admin.id);
+
+        if ((admin.failed_login_attempts || 0) + 1 >= 5) {
+          await supabase
+            .from("admin_users")
+            .update({ locked_until: new Date(Date.now() + 30 * 60 * 1000).toISOString() })
+            .eq("id", admin.id);
+          await supabase.auth.signOut();
+          setStep(1);
+          setError("تم قفل الحساب لمدة 30 دقيقة بسبب محاولات فاشلة متعددة");
+        } else {
+          setError("إجابات الأمان غير صحيحة");
+        }
+      }
     } catch {
       setError("حدث خطأ. حاول مرة أخرى.");
     }
