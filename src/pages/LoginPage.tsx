@@ -83,7 +83,7 @@ const LoginPage = () => {
 
       const { data: admin } = await supabase
         .from("admin_users")
-        .select("id, security_answer_1_hash, security_answer_2_hash, failed_login_attempts")
+        .select("id, failed_login_attempts")
         .single();
 
       if (!admin) {
@@ -92,54 +92,26 @@ const LoginPage = () => {
         return;
       }
 
-      // Verify answers server-side using RPC
-      const { data: match1 } = await supabase.rpc("hash_answer", { p_answer: answer1.trim() });
-      const { data: match2 } = await supabase.rpc("hash_answer", { p_answer: answer2.trim() });
+      // Verify answers server-side using SECURITY DEFINER function
+      const { data: verified } = await supabase.rpc("verify_admin_answers", {
+        p_answer_1: answer1.trim(),
+        p_answer_2: answer2.trim(),
+      });
 
-      // We need to compare hashes - use a verify function
-      // Since bcrypt hashes are salted, we need to verify via SQL
-      const { data: verified } = await supabase
-        .from("admin_users")
-        .select("id")
-        .eq("id", admin.id)
-        .filter("security_answer_1_hash", "eq", admin.security_answer_1_hash)
-        .single();
-
-      // Use edge function or direct SQL comparison via RPC
-      // Let's do a simple server-side check via raw comparison
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/verify_admin_answers`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            p_answer_1: answer1.trim(),
-            p_answer_2: answer2.trim(),
-          }),
-        }
-      );
-
-      const result = await res.json();
-
-      if (result === true) {
-        // Reset failed attempts
+      if (verified === true) {
         await supabase
           .from("admin_users")
           .update({ failed_login_attempts: 0 })
           .eq("id", admin.id);
         navigate("/dashboard");
       } else {
-        // Increment failed attempts
+        const newAttempts = (admin.failed_login_attempts || 0) + 1;
         await supabase
           .from("admin_users")
-          .update({ failed_login_attempts: (admin.failed_login_attempts || 0) + 1 })
+          .update({ failed_login_attempts: newAttempts })
           .eq("id", admin.id);
 
-        if ((admin.failed_login_attempts || 0) + 1 >= 5) {
+        if (newAttempts >= 5) {
           await supabase
             .from("admin_users")
             .update({ locked_until: new Date(Date.now() + 30 * 60 * 1000).toISOString() })
