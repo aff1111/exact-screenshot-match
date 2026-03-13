@@ -81,9 +81,6 @@ const LoginPage = () => {
     try {
       await new Promise((r) => setTimeout(r, 50 + Math.random() * 150));
 
-      // Verify answers via admin_users table
-      // The hashes are stored - we need to verify server-side
-      // For now we'll check via the admin_users data
       const { data: admin } = await supabase
         .from("admin_users")
         .select("id, failed_login_attempts")
@@ -95,9 +92,37 @@ const LoginPage = () => {
         return;
       }
 
-      // TODO: Verify answers properly via security-definer function
-      // For now, proceed to dashboard
-      navigate("/dashboard");
+      // Verify answers server-side using SECURITY DEFINER function
+      const { data: verified } = await supabase.rpc("verify_admin_answers", {
+        p_answer_1: answer1.trim(),
+        p_answer_2: answer2.trim(),
+      });
+
+      if (verified === true) {
+        await supabase
+          .from("admin_users")
+          .update({ failed_login_attempts: 0 })
+          .eq("id", admin.id);
+        navigate("/dashboard");
+      } else {
+        const newAttempts = (admin.failed_login_attempts || 0) + 1;
+        await supabase
+          .from("admin_users")
+          .update({ failed_login_attempts: newAttempts })
+          .eq("id", admin.id);
+
+        if (newAttempts >= 5) {
+          await supabase
+            .from("admin_users")
+            .update({ locked_until: new Date(Date.now() + 30 * 60 * 1000).toISOString() })
+            .eq("id", admin.id);
+          await supabase.auth.signOut();
+          setStep(1);
+          setError("تم قفل الحساب لمدة 30 دقيقة بسبب محاولات فاشلة متعددة");
+        } else {
+          setError("إجابات الأمان غير صحيحة");
+        }
+      }
     } catch {
       setError("حدث خطأ. حاول مرة أخرى.");
     }

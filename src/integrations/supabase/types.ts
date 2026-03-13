@@ -100,6 +100,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_ips: {
+        Row: {
+          blocked_at: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string
+          is_active: boolean | null
+          reason: string | null
+        }
+        Insert: {
+          blocked_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address: string
+          is_active?: boolean | null
+          reason?: string | null
+        }
+        Update: {
+          blocked_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string
+          is_active?: boolean | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       letter_access_sessions: {
         Row: {
           attempts_used: number | null
@@ -380,6 +407,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_block_ip: { Args: { p_ip: string }; Returns: boolean }
       check_rate_limit: {
         Args: {
           p_endpoint: string
@@ -410,6 +438,10 @@ export type Database = {
           p_user_agent: string
         }
         Returns: undefined
+      }
+      verify_admin_answers: {
+        Args: { p_answer_1: string; p_answer_2: string }
+        Returns: boolean
       }
       verify_security_answer: {
         Args: { p_answer: string; p_letter_id: string; p_question_id: string }
