@@ -76,8 +76,20 @@ const RecipientPage = () => {
     }
   };
 
-  const handleBreakSeal = () => {
+  const handleBreakSeal = async () => {
     setSealBroken(true);
+    
+    if (selectedLetter?.id) {
+      try {
+        await (supabase.rpc as any)("decrypt_letter_content", {
+          p_letter_id: selectedLetter.id,
+          p_session_token: "SESSION_LEGACY" 
+        });
+      } catch (e) {
+        console.warn("Read tracking failed, but proceeding.");
+      }
+    }
+
     setTimeout(() => setState("reading"), 1000);
   };
 
@@ -108,7 +120,7 @@ const RecipientPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0a05] selection:bg-gold/30 selection:text-gold relative overflow-hidden flex items-center justify-center p-4">
+    <div className="min-h-screen bg-parchment-pattern selection:bg-gold/30 selection:text-gold relative overflow-hidden flex items-center justify-center p-4">
       {/* Royal Background Elements */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold/10 via-transparent to-transparent opacity-40 pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />

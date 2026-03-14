@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLetters } from "@/hooks/useLetters";
 import waxSeal from "@/assets/wax-seal.png";
-import ParchmentCard from "@/components/ui/ParchmentCard";
 import { cn } from "@/lib/utils";
 
 // Lazy Load Tab Content
@@ -13,8 +12,9 @@ const SecurityLog = React.lazy(() => import("@/components/dashboard/SecurityLog"
 const AccountSettings = React.lazy(() => import("@/components/dashboard/AccountSettings"));
 const ComposeLetterModal = React.lazy(() => import("@/components/dashboard/ComposeLetterModal"));
 const AddRecipientModal = React.lazy(() => import("@/components/dashboard/AddRecipientModal"));
+const RepliesView = React.lazy(() => import("@/components/dashboard/RepliesView"));
 
-type Tab = "recipients" | "security" | "settings" | "analytics";
+type Tab = "recipients" | "replies" | "security" | "settings" | "analytics";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -49,13 +49,14 @@ const Dashboard = () => {
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "recipients", label: "المستلمون", icon: "📜" },
+    { key: "replies", label: "الردود الواردة", icon: "✉️" },
     { key: "security", label: "سجل الأمان", icon: "🛡" },
     { key: "settings", label: "الإعدادات", icon: "⚙️" },
     { key: "analytics", label: "التحليلات", icon: "📊" },
   ];
 
   if (!adminId) return (
-    <div className="min-h-screen bg-parchment flex items-center justify-center">
+    <div className="min-h-screen bg-parchment-pattern flex items-center justify-center">
       <motion.img 
         src={waxSeal} 
         animate={{ rotate: 360 }} 
@@ -66,9 +67,9 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-parchment/30 overflow-x-hidden pt-20 pb-12">
+    <div className="min-h-screen bg-parchment-pattern overflow-x-hidden pt-24 pb-12">
       {/* Royal Header */}
-      <header className="fixed top-0 inset-x-0 h-16 bg-white/20 backdrop-blur-xl border-b border-gold/10 z-50 flex items-center shadow-sm">
+      <header className="fixed top-0 inset-x-0 h-16 bg-white/10 backdrop-blur-xl border-b border-gold/10 z-50 flex items-center shadow-lg">
         <div className="container mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <img src={waxSeal} className="w-8 h-8 drop-shadow-md" alt="" />
@@ -90,19 +91,23 @@ const Dashboard = () => {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  "flex items-center gap-4 px-6 py-4 rounded-sm transition-all duration-300 group relative",
+                  "flex items-center gap-4 px-6 py-4 rounded-sm transition-all duration-500 group relative overflow-hidden",
                   activeTab === tab.key 
                     ? "bg-secondary text-white shadow-royal" 
                     : "bg-white/40 hover:bg-white/60 text-ink/70"
                 )}
               >
-                <span className="text-xl">{tab.icon}</span>
-                <span className="font-amiri text-lg">{tab.label}</span>
+                <span className="text-xl relative z-10">{tab.icon}</span>
+                <span className="font-amiri text-lg relative z-10">{tab.label}</span>
                 {activeTab === tab.key && (
                   <motion.div 
                     layoutId="activeTab"
-                    className="absolute right-0 top-0 bottom-0 w-1 bg-gold rounded-r-full"
+                    className="absolute right-0 top-0 bottom-0 w-1 bg-gold rounded-r-full z-20"
                   />
+                )}
+                {/* Gold Shimmer effect on active tab */}
+                {activeTab === tab.key && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold/10 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
                 )}
               </button>
             ))}
@@ -110,13 +115,13 @@ const Dashboard = () => {
             <div className="mt-8 pt-8 border-t border-gold/10 space-y-3">
               <button 
                 onClick={() => setShowCompose(true)}
-                className="btn-gold w-full text-[11px] py-4"
+                className="btn-gold w-full text-[11px] py-4 shadow-xl"
               >
                 ✍ رسالة جديدة
               </button>
               <button 
                 onClick={() => setShowAddRecipient(true)}
-                className="btn-royal w-full bg-parchment/50 border-gold/10 hover:border-gold/30 text-ink text-[11px] py-4"
+                className="btn-royal w-full bg-white/40 border-gold/10 hover:border-gold/30 text-ink text-[11px] py-4"
               >
                 👤 مستلم جديد
               </button>
@@ -128,9 +133,10 @@ const Dashboard = () => {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
                 className="w-full"
               >
                 <Suspense fallback={
@@ -143,8 +149,10 @@ const Dashboard = () => {
                       recipients={recipients} 
                       onSelectRecipient={() => {}} 
                       onRefresh={() => {}} 
+                      onViewReplies={() => setActiveTab("replies")}
                     />
                   )}
+                  {activeTab === "replies" && <RepliesView adminId={adminId} />}
                   {activeTab === "security" && <SecurityLog />}
                   {activeTab === "settings" && <AccountSettings adminId={adminId} />}
                   {activeTab === "analytics" && <div className="card-parchment h-96 flex items-center justify-center font-amiri text-ink/40">قريباً: تحليلات ملكية مفصلة</div>}

@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import waxSeal from "@/assets/wax-seal.png";
-import parchmentBg from "@/assets/parchment-bg.jpg";
 
 const OrnamentDivider = () => (
   <div className="flex items-center gap-4 my-8">

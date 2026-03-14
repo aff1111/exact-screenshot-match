@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import waxSeal from "@/assets/wax-seal.png";
-import parchmentBg from "@/assets/parchment-bg.jpg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -142,10 +141,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0f0a05]">
-      <div className="absolute inset-0 bg-parchment-pattern opacity-10 mix-blend-screen" />
-      <div className="absolute inset-0 bg-gradient-to-tr from-burgundy/40 via-transparent to-gold/10" />
-      <div className="absolute inset-0 backdrop-blur-[200px]" />
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-parchment-pattern selection:bg-gold/30 selection:text-gold">
+      <div className="absolute inset-0 bg-gradient-to-tr from-burgundy/20 via-transparent to-gold/5 pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
 
       <motion.div
         className="relative z-10 w-full max-w-md mx-4"
