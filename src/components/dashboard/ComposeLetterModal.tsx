@@ -1,252 +1,122 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Recipient {
-  id: string;
-  display_label: string;
-  is_active: boolean;
-  created_at: string;
-  use_count: number;
-}
-
-interface Question {
-  question: string;
-  answer: string;
-}
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLetters } from "@/hooks/useLetters";
+import { toast } from "sonner";
+import ParchmentCard from "@/components/ui/ParchmentCard";
+import { cn } from "@/lib/utils";
 
 interface Props {
   adminId: string;
-  recipients: Recipient[];
+  recipients: any[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
 const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) => {
-  const [recipientId, setRecipientId] = useState("");
+  const { sendLetter, isSending } = useLetters(adminId);
+  const [selectedRecipient, setSelectedRecipient] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [contentType, setContentType] = useState<"letter" | "poetry">("letter");
-  const [unlockAt, setUnlockAt] = useState<string>("");
-  const [questions, setQuestions] = useState<Question[]>([{ question: "", answer: "" }]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const addQuestion = () => {
-    if (questions.length >= 5) return;
-    setQuestions([...questions, { question: "", answer: "" }]);
-  };
-
-  const removeQuestion = (i: number) => {
-    if (questions.length <= 1) return;
-    setQuestions(questions.filter((_, idx) => idx !== i));
-  };
-
-  const updateQuestion = (i: number, field: "question" | "answer", value: string) => {
-    const updated = [...questions];
-    updated[i][field] = value;
-    setQuestions(updated);
-  };
-
-  const handleSubmit = async () => {
-    if (!recipientId || !title.trim() || !content.trim() || questions.some((q) => !q.question.trim() || !q.answer.trim())) {
-      setError("يرجى ملء جميع الحقول بما فيها عنوان الرسالة");
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecipient || !title || !content) {
+      return toast.error("يرجى ملء جميع البيانات الملكية");
     }
-
-    setLoading(true);
-    setError("");
 
     try {
-      const payload = {
-        recipient_id: recipientId,
-        title: title.trim(),
-        content: content.trim(),
-        content_type: contentType,
-        unlock_at: unlockAt || null,
-        questions: questions.map((q) => ({
-          question: q.question.trim(),
-          answer: q.answer.trim(),
-        })),
-      };
-
-      const { data, error: fnError } = await supabase.functions.invoke("admin-send-letter", {
-        body: payload,
-      });
-
-      if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
-
+      await sendLetter({ recipientId: selectedRecipient, title, content });
+      toast.success("تم إرسال الرسالة إلى الخزنة الملكية");
       onSuccess();
     } catch (err: any) {
-      setError(err.message || "حدث خطأ");
+      toast.error(`خطأ: ${err.message}`);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+      />
+      
       <motion.div
-        className="bg-parchment border border-gold/30 rounded-sm p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-seal"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        dir="rtl"
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl rounded-sm"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-cinzel text-xl text-secondary">كتابة رسالة جديدة</h2>
-          <button onClick={onClose} className="text-accent hover:text-secondary text-xl">✕</button>
-        </div>
-
-        <div className="space-y-5">
-          {/* Recipient */}
-          <div>
-            <label className="font-amiri text-sm text-accent block mb-1">المستلم</label>
-            <select
-              value={recipientId}
-              onChange={(e) => setRecipientId(e.target.value)}
-              className="w-full bg-parchment border border-gold/30 rounded-sm px-3 py-2 font-amiri text-sm focus:outline-none focus:border-gold"
-            >
-              <option value="">اختر مستلمًا...</option>
-              {recipients.filter(r => r.is_active).map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.display_label || r.id}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Title */}
-          <div>
-            <label className="font-amiri text-sm text-accent block mb-1">عنوان الرسالة أو القصيدة</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="مثال: رسالة إلى صديقي، قصيدة عتاب..."
-              className="w-full bg-parchment border border-gold/30 rounded-sm px-3 py-2 font-amiri text-sm focus:outline-none focus:border-gold"
-              dir="rtl"
-            />
-          </div>
-
-          {/* Content Type */}
-          <div>
-            <label className="font-amiri text-sm text-accent block mb-1">نوع الرسالة</label>
-            <div className="flex gap-3">
-              {(["letter", "poetry"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setContentType(type)}
-                  className={`px-4 py-2 rounded-sm font-amiri text-sm border transition-colors ${
-                    contentType === type
-                      ? "bg-secondary text-secondary-foreground border-gold"
-                      : "bg-parchment/60 text-accent border-gold/20"
-                  }`}
-                >
-                  {type === "letter" ? "✉ رسالة" : "📝 شعر"}
-                </button>
-              ))}
+        <ParchmentCard className="p-0 flex flex-col h-full overflow-y-auto">
+          {/* Header */}
+          <div className="p-8 border-b border-gold/10 flex justify-between items-center sticky top-0 bg-parchment/80 backdrop-blur-sm z-20">
+            <div>
+              <h2 className="font-cinzel text-2xl text-secondary">إنشاء وثيقة ملكية</h2>
+              <p className="font-amiri text-ink/50">صِغ كلماتك بعناية لتُحفظ في الخزنة</p>
             </div>
+            <button onClick={onClose} className="text-2xl text-ink/40 hover:text-secondary p-2 transition-colors">✕</button>
           </div>
 
-          {/* Content */}
-          <div>
-            <label className="font-amiri text-sm text-accent block mb-1">محتوى الرسالة</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={8}
-              className="w-full bg-parchment border border-gold/30 rounded-sm px-3 py-2 font-amiri text-sm focus:outline-none focus:border-gold resize-none"
-              placeholder={contentType === "poetry" ? "اكتب أبياتك هنا..." : "اكتب رسالتك هنا..."}
-              dir="rtl"
-            />
-          </div>
-
-          {/* Security Questions */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="font-amiri text-sm text-accent">أسئلة الأمان</label>
-              {questions.length < 5 && (
-                <button
-                  type="button"
-                  onClick={addQuestion}
-                  className="font-cinzel text-xs text-primary hover:underline"
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="font-cinzel text-[10px] tracking-widest uppercase text-ink/40">المستلم المقصود</label>
+                <select 
+                  value={selectedRecipient}
+                  onChange={(e) => setSelectedRecipient(e.target.value)}
+                  className="input-royal w-full appearance-none"
                 >
-                  + إضافة سؤال
-                </button>
-              )}
+                  <option value="">اختر المستلم...</option>
+                  {recipients.map(r => (
+                    <option key={r.id} value={r.id}>{r.display_label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-3">
+                <label className="font-cinzel text-[10px] tracking-widest uppercase text-ink/40">عنوان الوثيقة</label>
+                <input 
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="مثلاً: مرسوم ملكي عاجل"
+                  className="input-royal w-full"
+                />
+              </div>
             </div>
+
             <div className="space-y-3">
-              {questions.map((q, i) => (
-                <div key={i} className="bg-parchment-dark/30 border border-gold/10 rounded-sm p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-cinzel text-xs text-accent">سؤال {i + 1}</span>
-                    {questions.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeQuestion(i)}
-                        className="text-destructive text-xs hover:underline"
-                      >
-                        حذف
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={q.question}
-                    onChange={(e) => updateQuestion(i, "question", e.target.value)}
-                    placeholder="السؤال..."
-                    className="w-full bg-parchment border border-gold/20 rounded-sm px-3 py-1.5 font-amiri text-sm focus:outline-none focus:border-gold"
-                    dir="rtl"
-                  />
-                  <input
-                    type="text"
-                    value={q.answer}
-                    onChange={(e) => updateQuestion(i, "answer", e.target.value)}
-                    placeholder="الإجابة الصحيحة..."
-                    className="w-full bg-parchment border border-gold/20 rounded-sm px-3 py-1.5 font-amiri text-sm focus:outline-none focus:border-gold"
-                    dir="rtl"
-                  />
-                </div>
-              ))}
+              <label className="font-cinzel text-[10px] tracking-widest uppercase text-ink/40">محتوى الرسالة</label>
+              <textarea 
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="اكتب هنا بمداد الذهب..."
+                className="input-royal w-full min-h-[300px] resize-none leading-relaxed text-lg"
+                dir="rtl"
+              />
             </div>
-          </div>
 
-          {/* Vision 2035: Time-Locking */}
-          <div className="space-y-2 pt-4 border-t border-gold/10">
-            <label className="flex items-center gap-2 text-xs font-cinzel text-accent uppercase tracking-widest">
-              <span className="text-gold">🔒</span> إقفال زمني (اختياري)
-            </label>
-            <input
-              type="datetime-local"
-              value={unlockAt}
-              onChange={(e) => setUnlockAt(e.target.value)}
-              className="w-full bg-parchment-dark/30 border border-gold/20 rounded-sm px-4 py-3 font-amiri text-sm focus:outline-none focus:border-gold transition-colors"
-              dir="rtl"
-            />
-            <p className="text-[10px] text-muted-foreground font-amiri">
-              لن يتمكن المستلم من فتح هذه الرسالة قبل الوقت المحدد أعلاه.
-            </p>
-          </div>
-
-          {error && <p className="font-amiri text-destructive text-sm text-center">{error}</p>}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3 font-cinzel text-xs tracking-widest uppercase bg-transparent text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark"
-            >
-              إلغاء
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="flex-[2] py-3 font-cinzel text-sm tracking-widest uppercase bg-secondary text-secondary-foreground border border-gold shadow-seal hover:bg-burgundy-light transition-colors disabled:opacity-50 rounded-sm"
-            >
-              {loading ? "جارٍ الإرسال..." : "إرسال الرسالة ✦"}
-            </button>
-          </div>
-        </div>
+            <div className="pt-6 border-t border-gold/10 flex justify-end gap-4">
+              <button 
+                type="button" 
+                onClick={onClose}
+                className="btn-royal bg-transparent border-gold/20 text-ink/60 px-8"
+              >
+                إلغاء
+              </button>
+              <button 
+                type="submit"
+                disabled={isSending}
+                className="btn-gold px-12 py-4"
+              >
+                {isSending ? "جارٍ التوثيق..." : "ختم وإرسال الرسالة"}
+              </button>
+            </div>
+          </form>
+        </ParchmentCard>
       </motion.div>
     </div>
   );

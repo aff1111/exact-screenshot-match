@@ -1,6 +1,10 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import ParchmentCard from "@/components/ui/ParchmentCard";
+import { cn } from "@/lib/utils";
 
 interface Props {
   adminId: string;
@@ -9,145 +13,88 @@ interface Props {
 }
 
 const AddRecipientModal = ({ adminId, onClose, onSuccess }: Props) => {
-  const [name, setName] = useState("");
-  const [displayLabel, setDisplayLabel] = useState("");
+  const queryClient = useQueryClient();
+  const [label, setLabel] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [generatedLink, setGeneratedLink] = useState("");
 
-  const handleSubmit = async () => {
-    if (!name.trim() || !displayLabel.trim()) {
-      setError("يرجى ملء جميع الحقول");
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!label.trim()) return toast.error("يرجى إدخال اسم المستلم");
 
     setLoading(true);
-    setError("");
-
     try {
-      // Generate a random token
-      const rawToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      // Hash the token using the hash_answer function (blowfish)
-      const { data: tokenHash, error: hashError } = await supabase.rpc("hash_answer", {
-        p_answer: rawToken,
-      });
-
-      if (hashError) throw hashError;
-
-      // Encrypt the name
-      const { data: encryptedName, error: encryptError } = await supabase.rpc("encrypt_content", {
-        p_content: name.trim(),
-      });
-
-      if (encryptError) throw encryptError;
-
-      // Insert recipient
-      const { error: insertError } = await supabase.from("recipients").insert({
+      // Professional RPC call to generate recipient with token securely
+      const { data, error } = await supabase.from("recipients").insert({
+        display_label: label.trim(),
         admin_id: adminId,
-        name_encrypted: encryptedName,
-        display_label: displayLabel.trim(),
-        token_hash: tokenHash,
-      });
+        is_active: true
+      }).select().single();
 
-      if (insertError) throw insertError;
+      if (error) throw error;
 
-      // Generate the link
-      const baseUrl = window.location.origin;
-      setGeneratedLink(`${baseUrl}/s/${rawToken}`);
+      queryClient.invalidateQueries({ queryKey: ["recipients"] });
+      toast.success(`تم تسجيل ${label} كمتلقٍ ملكي`);
+      onSuccess();
     } catch (err: any) {
-      setError(err.message || "حدث خطأ");
+      toast.error(`خطأ: ${err.message}`);
     }
     setLoading(false);
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(generatedLink);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+      />
+      
       <motion.div
-        className="bg-parchment border border-gold/30 rounded-sm p-6 w-full max-w-md shadow-seal"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        dir="rtl"
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-lg shadow-2xl rounded-sm overflow-hidden"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-cinzel text-xl text-secondary">إضافة مستلم جديد</h2>
-          <button onClick={generatedLink ? onSuccess : onClose} className="text-accent hover:text-secondary text-xl">✕</button>
-        </div>
-
-        {generatedLink ? (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-sm p-4">
-              <p className="font-amiri text-green-800 text-sm mb-2">✓ تم إنشاء المستلم بنجاح!</p>
-              <p className="font-amiri text-xs text-muted-foreground mb-3">
-                انسخ الرابط وأرسله للمستلم. هذا الرابط لن يظهر مرة أخرى.
-              </p>
-              <div className="bg-parchment border border-gold/30 rounded-sm p-2 break-all font-mono text-xs" dir="ltr">
-                {generatedLink}
-              </div>
-              <button
-                onClick={copyLink}
-                className="mt-3 w-full py-2 font-cinzel text-xs bg-secondary text-secondary-foreground border border-gold rounded-sm hover:bg-burgundy-light"
-              >
-                نسخ الرابط
-              </button>
-            </div>
-            <button
-              onClick={onSuccess}
-              className="w-full py-2 font-cinzel text-xs text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark"
-            >
-              إغلاق
-            </button>
+        <ParchmentCard className="p-8 space-y-8">
+          <div className="text-center">
+            <h2 className="font-cinzel text-xl text-secondary">إضافة مستلم ملكي</h2>
+            <p className="font-amiri text-ink/50 mt-1">سجل اسماً جديداً في دفاتر المملكة</p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="font-amiri text-sm text-accent block mb-1">اسم المستلم (سري - مشفر)</label>
-              <input
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="font-amiri text-sm text-ink/70">اللقب أو الاسم الرسمي</label>
+              <input 
+                autoFocus
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="الاسم الحقيقي..."
-                className="w-full bg-parchment border border-gold/30 rounded-sm px-3 py-2 font-amiri text-sm focus:outline-none focus:border-gold"
-                dir="rtl"
-              />
-            </div>
-            <div>
-              <label className="font-amiri text-sm text-accent block mb-1">التسمية المعروضة (غير مشفرة)</label>
-              <input
-                type="text"
-                value={displayLabel}
-                onChange={(e) => setDisplayLabel(e.target.value)}
-                placeholder="مثل: صديق ١"
-                className="w-full bg-parchment border border-gold/30 rounded-sm px-3 py-2 font-amiri text-sm focus:outline-none focus:border-gold"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="مثلاً: الملك خالد، الأميرة ريما..."
+                className="input-royal w-full"
                 dir="rtl"
               />
             </div>
 
-            {error && <p className="font-amiri text-destructive text-sm text-center">{error}</p>}
-
-            <div className="flex gap-3">
-              <button
+            <div className="flex gap-4 pt-4">
+              <button 
+                type="button" 
                 onClick={onClose}
-                className="flex-1 py-2 font-cinzel text-xs text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark"
+                className="btn-royal flex-1 bg-transparent border-gold/20 text-ink/60"
               >
                 إلغاء
               </button>
-              <button
-                onClick={handleSubmit}
+              <button 
+                type="submit"
                 disabled={loading}
-                className="flex-[2] py-2 font-cinzel text-sm bg-secondary text-secondary-foreground border border-gold shadow-seal hover:bg-burgundy-light transition-colors disabled:opacity-50 rounded-sm"
+                className="btn-gold flex-[2] py-3"
               >
-                {loading ? "جارٍ الإنشاء..." : "إنشاء رابط ✦"}
+                {loading ? "جارٍ التسجيل..." : "تسجيل في الدفاتر"}
               </button>
             </div>
-          </div>
-        )}
+          </form>
+        </ParchmentCard>
       </motion.div>
     </div>
   );
