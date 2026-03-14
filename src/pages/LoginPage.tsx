@@ -93,10 +93,16 @@ const LoginPage = () => {
       }
 
       // Verify answers server-side using SECURITY DEFINER function
-      const { data: verified } = await supabase.rpc("verify_admin_answers", {
+      const { data: verified, error: verifyError } = await supabase.rpc("verify_admin_answers", {
         p_answer_1: answer1.trim(),
         p_answer_2: answer2.trim(),
       });
+
+      if (verifyError) {
+        setError("تعذر التحقق من إجابات الأمان حالياً. حاول مرة أخرى.");
+        setLoading(false);
+        return;
+      }
 
       if (verified === true) {
         await supabase
