@@ -136,7 +136,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch {
-    return errorResponse(500, "An error occurred");
+  } catch (err) {
+    console.error("Critical function error:", err);
+    return errorResponse(500, err instanceof Error ? err.message : "An error occurred");
   }
 });

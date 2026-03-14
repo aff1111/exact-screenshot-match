@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import parchmentBg from "@/assets/parchment-bg.jpg";
 import waxSeal from "@/assets/wax-seal.png";
-import { toast } from "sonner"; // Assuming sonner is installed and imported
+import { toast } from "sonner";
 
 type PageState = "loading" | "gate" | "answering" | "revealing" | "letters" | "error";
 
@@ -120,7 +120,6 @@ const RecipientPage = () => {
       setSessionToken(data.session_token);
       setState("revealing");
 
-      // Start seal break animation
       setTimeout(() => setSealBroken(true), 500);
       setTimeout(() => {
         setScrollRevealed(true);
@@ -145,14 +144,13 @@ const RecipientPage = () => {
           icon: '🔒',
         });
         setScrollRevealed(false);
-        setState("letters"); // Changed from setStep("list") to setState("letters")
+        setState("letters");
         return;
       }
 
       if (data.letter) {
         setLetterContent(data.letter);
       } else {
-        // Fallback for direct data objects
         setLetterContent({
           ...data,
           content: data.content || data.content_encrypted || ""
@@ -379,11 +377,11 @@ const RecipientPage = () => {
           {state === "revealing" && (
             <motion.div
               key="revealing"
-              className="w-full max-w-2xl text-center"
+              className="w-full max-w-4xl mx-auto flex flex-col items-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              {/* Wax Seal Break Animation */}
               {!sealBroken && (
                 <motion.div className="flex justify-center mb-8">
                   <motion.img
@@ -411,135 +409,146 @@ const RecipientPage = () => {
               )}
 
               {scrollRevealed && (
-                <motion.div
-                  className="mx-auto shadow-2xl overflow-hidden flex flex-col relative"
-                  style={{
-                    width: '100%',
-                    maxWidth: '650px',
-                    minHeight: '900px',
-                    backgroundImage: "url('/manuscript-bg.png')",
-                    backgroundSize: "100% 100%",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "center",
-                    padding: '16% 12% 16% 12%'
-                  }}
-                  initial={{ opacity: 0, scale: 0.9, rotateX: -20 }}
-                  animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                  transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-                  dir="rtl"
-                >
-                  {/* Luxury Texture Overlay */}
-                  <div className="absolute inset-0 bg-noise-overlay opacity-[0.03] pointer-events-none" />
-                  
-                  <div className="flex-1 flex flex-col items-stretch relative z-10 w-full h-full">
-                    {letterContent ? (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5, duration: 1 }}
-                        className="relative"
-                      >
-                        {/* Royal Header */}
-                        <div className="text-right mb-12 border-b-2 border-double border-gold/40 pb-8 relative">
-                          <div className="absolute top-0 right-0 w-16 h-1 bg-gold/30 -mr-4" />
-                          <p className="font-cinzel text-3xl text-secondary mb-3 tracking-widest drop-shadow-sm uppercase">من: أحمد</p>
-                          <p className="font-amiri text-2xl text-ink leading-relaxed font-bold">
-                            إلى: {letterContent.recipient_name || "صديق مخلص"}
-                          </p>
-                          <div className="flex items-center gap-2 mt-4 text-accent/80 font-amiri italic">
-                            <span>حُرر بمدينة القاهرة في:</span>
-                            <span>{new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                          </div>
-                        </div>
-
-                        {/* Title Display if it exists */}
-                        {letterContent.title && (
-                          <div className="text-center mb-10">
-                            <h2 className="font-amiri text-4xl text-secondary border-b border-gold/20 inline-block px-12 pb-4">
-                              {letterContent.title}
-                            </h2>
-                          </div>
-                        )}
-
-                        {/* Letter Content */}
-                        <div className={`font-amiri text-3xl text-ink leading-[2.6] whitespace-pre-wrap px-6 md:px-12 py-8 drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)] ${
-                          letterContent.content_type === "poetry" ? "text-center italic" : "text-justify"
-                        }`}>
-                          {letterContent.content || "الرسالة في طريقها للتجلي..."}
-                        </div>
-
-                        {/* Royal Footer / Signature */}
-                        <div className="text-center mt-16 border-t border-gold/10 pt-12">
-                          <motion.img 
-                            src={waxSeal} 
-                            alt="" 
-                            className="w-24 h-24 mx-auto opacity-100 drop-shadow-lg mb-4" 
-                            initial={{ scale: 0, rotate: -45 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: "spring", stiffness: 200, delay: 2 }}
-                          />
-                          <p className="font-cinzel-decorative text-4xl text-secondary drop-shadow-sm tracking-wider">
-                            أحمد
-                          </p>
-                          <p className="font-amiri text-sm text-accent mt-2 opacity-60">عُهود مـكـتـوب © 2026</p>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center text-center">
-                        <p className="font-amiri text-2xl text-muted-foreground animate-pulse">
-                          جارٍ فك التشفير وفتح الرسالة الملكية...
-                        </p>
-                      </div>
-                    )}
-                    {letterContent && (
-                      <motion.div
-                        className="mt-8 pt-6 border-t border-gold/20"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.5 }}
-                      >
-                        {replySent ? (
-                          <motion.div
-                            className="text-center py-4"
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                          >
-                            <img src={waxSeal} alt="" className="w-12 h-12 mx-auto mb-3" />
-                            <p className="font-amiri text-lg text-secondary">تم إرسال ردّك بنجاح ✦</p>
-                          </motion.div>
-                        ) : (
-                          <>
-                            <p className="font-amiri text-sm text-accent mb-3">اكتب ردك:</p>
-                            <textarea
-                              value={replyText}
-                              onChange={(e) => setReplyText(e.target.value)}
-                              rows={4}
-                              className="w-full bg-parchment border border-gold/30 rounded-sm px-4 py-3 font-amiri text-sm focus:outline-none focus:border-gold resize-none"
-                              placeholder="ردّك هنا..."
-                              dir="rtl"
-                            />
-                            <div className="flex gap-3 mt-3">
-                              <button
-                                onClick={goBackToLetters}
-                                className="flex-1 py-2 font-cinzel text-xs text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark"
-                              >
-                                العودة للرسائل
-                              </button>
-                              <motion.button
-                                onClick={handleReply}
-                                disabled={loading || !replyText.trim()}
-                                className="flex-[2] py-2 font-cinzel text-sm bg-secondary text-secondary-foreground border border-gold shadow-seal hover:bg-burgundy-light disabled:opacity-50 rounded-sm"
-                                whileTap={{ scale: 0.97 }}
-                              >
-                                {loading ? "جارٍ الإرسال..." : "إرسال الرد ✦"}
-                              </motion.button>
+                <div className="w-full flex flex-col items-center gap-8 pb-12">
+                  <motion.div
+                    className="mx-auto shadow-2xl relative flex flex-col"
+                    style={{
+                      width: 'min(95vw, 650px)',
+                      minHeight: 'min(140vw, 850px)',
+                      backgroundImage: "url('/manuscript-bg.png')",
+                      backgroundSize: "100% 100%",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                    }}
+                    initial={{ opacity: 0, scale: 0.9, rotateX: -20 }}
+                    animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                    transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+                    dir="rtl"
+                  >
+                    <div className="flex-1 flex flex-col items-stretch relative z-10 w-full h-full p-[18%_14%_18%_14%]">
+                      {letterContent ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.5, duration: 1 }}
+                          className="flex flex-col h-full overflow-hidden"
+                        >
+                          <div className="text-right mb-6 md:mb-10 border-b border-gold/20 pb-4 md:pb-6 relative">
+                            <p className="font-amiri text-lg md:text-xl text-secondary mb-1 opacity-80 italic">من: أحمد</p>
+                            <p className="font-amiri text-xl md:text-2xl text-ink leading-relaxed font-bold">
+                              إلى: {letterContent.recipient_name || "صديق مخلص"}
+                            </p>
+                            <div className="mt-2 text-[10px] md:text-xs text-accent/60 font-amiri italic">
+                              <span>حُرر في: </span>
+                              <span>{new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             </div>
-                          </>
-                        )}
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
+                          </div>
+
+                          {letterContent.title && (
+                            <div className="text-center mb-6 md:mb-8">
+                              <h2 className="font-amiri text-2xl md:text-3xl text-secondary border-b border-gold/10 inline-block px-8 pb-2">
+                                {letterContent.title}
+                              </h2>
+                            </div>
+                          )}
+
+                          <div className={`flex-1 font-amiri text-xl md:text-2xl text-ink leading-[1.8] md:leading-[2.2] whitespace-pre-wrap overflow-y-auto scrollbar-hide ${
+                            letterContent.content_type === "poetry" ? "text-center italic" : "text-justify"
+                          }`}>
+                            {letterContent.content || "الرسالة في طريقها للتجلي..."}
+                          </div>
+
+                          <div className="text-center mt-auto pt-8">
+                            <motion.img 
+                              src={waxSeal} 
+                              alt="" 
+                              className="w-16 h-16 md:w-20 md:h-20 mx-auto opacity-100 drop-shadow-md mb-2" 
+                              initial={{ scale: 0, rotate: -45 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: "spring", stiffness: 200, delay: 2 }}
+                            />
+                            <p className="font-cinzel text-xl md:text-2xl text-secondary tracking-wider opacity-90">
+                              أحمد
+                            </p>
+                            <p className="font-amiri text-[8px] md:text-[10px] text-accent mt-1 opacity-40 uppercase tracking-widest text-center">Maktoob © 2026</p>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center text-center">
+                          <p className="font-amiri text-xl text-muted-foreground animate-pulse">
+                            جارٍ فك التشفير...
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+
+                  {letterContent && (
+                    <motion.div
+                      className="w-full max-w-[650px] bg-parchment/60 backdrop-blur-md border border-gold/30 rounded-sm p-6 shadow-seal relative overflow-hidden mx-auto"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.5 }}
+                      dir="rtl"
+                    >
+                      <div className="absolute top-0 left-0 w-24 h-24 bg-gold/5 blur-2xl rounded-full -translate-x-12 -translate-y-12" />
+                      
+                      {replySent ? (
+                        <motion.div
+                          className="text-center py-6"
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                        >
+                          <img src={waxSeal} alt="" className="w-14 h-14 mx-auto mb-3" />
+                          <p className="font-amiri text-xl text-secondary font-bold">تَمّ بَحثُ الرَدّ بنَجاح ✦</p>
+                          <p className="font-amiri text-sm text-accent mt-2">سَيتم إخطار مُرسِل الرسالة برَدّك.</p>
+                          <button 
+                            onClick={goBackToLetters}
+                            className="mt-6 font-cinzel text-xs tracking-widest text-secondary hover:underline"
+                          >
+                            العودة إلى الديوان
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <div className="space-y-4 relative z-10 w-full">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-gold text-xl">📜</span>
+                            <h3 className="font-cinzel text-sm text-secondary tracking-widest uppercase">الرد على المكتوب</h3>
+                          </div>
+                          
+                          <textarea
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            rows={4}
+                            className="w-full bg-parchment/40 border border-gold/20 rounded-sm px-4 py-4 font-amiri text-lg text-ink focus:outline-none focus:border-gold transition-all resize-none placeholder:text-accent/30 shadow-inner"
+                            placeholder="اكتب ردّك هنا بكلماتٍ تليق..."
+                            dir="rtl"
+                          />
+                          
+                          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <button
+                              onClick={goBackToLetters}
+                              className="flex-1 py-3 font-cinzel text-xs text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark transition-colors uppercase tracking-widest"
+                            >
+                              العودة للرسائل
+                            </button>
+                            <motion.button
+                              onClick={handleReply}
+                              disabled={loading || !replyText.trim()}
+                              className="flex-[2] py-3 font-cinzel text-sm bg-secondary text-secondary-foreground border border-gold shadow-seal hover:bg-burgundy-light disabled:opacity-50 rounded-sm transition-all relative overflow-hidden group"
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <span className="relative z-10 flex items-center justify-center gap-2">
+                                {loading ? "جارٍ الإرسال..." : "إرسال الرَد الملكي ✦"}
+                              </span>
+                              <div className="absolute inset-0 bg-gold/10 translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
+                            </motion.button>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
               )}
             </motion.div>
           )}
