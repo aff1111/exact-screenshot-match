@@ -465,7 +465,7 @@ const RecipientPage = () => {
                     transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
                     dir="rtl"
                   >
-                    <div className="flex-1 flex flex-col items-stretch relative z-10 w-full h-full px-12 pt-16 pb-12 md:px-20 md:pt-24 md:pb-16 text-right">
+                    <div className="flex-1 flex flex-col items-stretch relative z-10 w-full h-full px-16 pt-24 pb-20 md:px-24 md:pt-28 md:pb-24 text-right">
                       {letterContent ? (
                         <motion.div
                           initial={{ opacity: 0 }}
@@ -473,12 +473,12 @@ const RecipientPage = () => {
                           transition={{ delay: 1, duration: 1 }}
                           className="flex flex-col h-full"
                         >
-                          {/* Top Section: Sender & Date (Right Aligned) */}
-                          <div className="mb-8 space-y-1">
-                            <p className="font-amiri text-lg md:text-xl text-secondary font-bold leading-none">
+                          {/* Top Section: Header (Sender & Date) - Top Right */}
+                          <div className="flex flex-col items-end mb-10 space-y-1">
+                            <p className="font-amiri text-xl md:text-2xl text-secondary font-bold leading-none uppercase tracking-wide">
                               {letterContent.sender_name || "أحمد"}
                             </p>
-                            <p className="font-amiri text-xs md:text-sm text-accent/60">
+                            <p className="font-amiri text-sm md:text-base text-accent/60 italic">
                               {new Date(letterContent.created_at).toLocaleDateString("ar-EG", { 
                                 year: 'numeric', 
                                 month: 'long', 
@@ -490,39 +490,41 @@ const RecipientPage = () => {
                           {/* Center Section: Title */}
                           {letterContent.title && (
                             <div className="text-center mb-12">
-                              <h2 className="font-amiri text-3xl md:text-4xl text-ink font-bold border-b border-gold/20 inline-block px-12 pb-4 italic">
+                              <h2 className="font-amiri text-3xl md:text-5xl text-ink font-bold border-b border-gold/10 inline-block px-12 pb-6 italic">
                                 {letterContent.title}
                               </h2>
                             </div>
                           )}
 
-                          {/* Content Section: Ink Writing effect */}
-                          <div className="flex-1 font-amiri text-xl md:text-2xl text-ink leading-[1.8] md:leading-[2.2] whitespace-pre-wrap mb-12">
-                            <InkWritingText 
-                              text={letterContent.content || "الرسالة في طريقها للتجلي..."} 
-                              speed={40}
-                            />
+                          {/* Content Section: Vertically Centered */}
+                          <div className="flex-1 flex flex-col justify-center mb-12">
+                            <div className="font-amiri text-2xl md:text-3xl text-ink leading-[2] md:leading-[2.4] whitespace-pre-wrap">
+                              <InkWritingText 
+                                text={letterContent.content || "الرسالة في طريقها للتجلي..."} 
+                                speed={40}
+                              />
+                            </div>
                           </div>
 
-                          {/* Recipient Section */}
-                          <div className="mb-10">
-                            <p className="font-amiri text-lg md:text-xl text-secondary">
-                              إلى: <span className="font-bold border-b border-gold/30 pb-1">{letterContent.recipient_name || "صديق مخلص"}</span>
+                          {/* Recipient Section: Right Aligned with Padding */}
+                          <div className="mb-12 pr-4">
+                            <p className="font-amiri text-xl md:text-2xl text-secondary">
+                              إلى: <span className="font-bold border-b-2 border-gold/20 pb-1 px-4">{letterContent.recipient_name || "صديق مخلص"}</span>
                             </p>
                           </div>
 
-                          {/* Bottom Section: Decorative Wax Seal */}
-                          <div className="mt-auto text-center pt-8">
+                          {/* Bottom Section: Wax Seal (Bottom Fixed) */}
+                          <div className="mt-auto text-center pt-12">
                             <motion.img 
                               src={waxSeal} 
                               alt="Royal Wax Seal" 
-                              className="w-20 h-20 md:w-24 md:h-24 mx-auto opacity-90 drop-shadow-lg" 
+                              className="w-24 h-24 md:w-32 md:h-32 mx-auto opacity-100 drop-shadow-2xl" 
                               initial={{ scale: 0, rotate: -45, opacity: 0 }}
                               animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                              transition={{ type: "spring", stiffness: 100, delay: 2 }}
+                              transition={{ type: "spring", stiffness: 100, delay: 2.5 }}
                             />
-                            <p className="font-amiri text-[10px] mt-4 text-accent/40 uppercase tracking-[0.2em] text-center">
-                              سري للغاية • ٢٠٢٦
+                            <p className="font-amiri text-[12px] mt-6 text-accent/30 uppercase tracking-[0.3em] text-center">
+                              مكتوب • سري للغاية • ٢٠٢٦
                             </p>
                           </div>
                         </motion.div>
