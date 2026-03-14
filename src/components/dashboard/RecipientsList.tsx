@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface Recipient {
   id: string;
   display_label: string;
+  token: string;
   is_active: boolean;
   created_at: string;
   use_count: number;
@@ -110,12 +111,23 @@ const RecipientsList = ({ recipients }: Props) => {
                     {recipient.is_active ? "تعطيل" : "تفعيل"}
                   </button>
                   
+                  <button 
+                    onClick={() => {
+                      const link = `${window.location.origin}/recipient/${recipient.token}`;
+                      navigator.clipboard.writeText(link);
+                      toast.success("تم نسخ الرابط الملكي");
+                    }}
+                    className="btn-royal py-2 px-5 text-[10px] border-gold/40 bg-gold/10 text-gold hover:bg-gold hover:text-white"
+                  >
+                    نسخ الرابط
+                  </button>
+                  
                   <button className="btn-royal py-2 px-5 text-[10px] border-gold/20 bg-parchment/50 text-ink hover:bg-parchment">
-                    أدوات الرابط
+                    الردود المستلمة
                   </button>
                   
                   <button className="btn-gold py-2 px-5 text-[10px] shadow-sm">
-                    تعديل الأمان
+                    تحكم الآمان
                   </button>
                 </div>
               </div>

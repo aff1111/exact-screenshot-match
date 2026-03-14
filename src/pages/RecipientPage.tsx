@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InkWritingText from "@/components/InkWritingText";
 import ParchmentCard from "@/components/ui/ParchmentCard";
+import RoyalScroll from "@/components/ui/RoyalScroll";
 import { cn } from "@/lib/utils";
 
-// Asset placeholders (using generated themes)
+// Asset placeholders
 const WAX_SEAL_URL = "https://raw.githubusercontent.com/the-asmar/maktoob-assets/main/wax-seal.png";
 
 type PageState = "loading" | "gate" | "answering" | "revealing" | "reading" | "error";
@@ -31,7 +32,6 @@ const RecipientPage = () => {
     if (!token) return setState("error");
     
     try {
-      // Professional RPC call to verify recipient securely
       const { data, error } = await supabase.rpc("verify_recipient_link" as any, { p_token: token }) as { data: any, error: any };
       if (error || !data) throw error;
 
@@ -55,17 +55,56 @@ const RecipientPage = () => {
 
   const handleVerifyQuestions = async () => {
     setLoading(true);
-    // Logic to verify questions via RPC
-    // For now mocking success for UI flow
-    setTimeout(() => {
-      setState("revealing");
+    try {
+      const { data: isCorrect, error } = await supabase.rpc("verify_security_answer" as any, {
+        p_token: token,
+        p_answers: answers
+      }) as { data: boolean, error: any };
+
+      if (error) throw error;
+
+      if (isCorrect) {
+        setState("revealing");
+      } else {
+        toast.error("إجابات الأمان غير صحيحة");
+      }
+    } catch (err) {
+      console.error("Verification error:", err);
+      toast.error("حدث خطأ أثناء التحقق");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const handleBreakSeal = () => {
     setSealBroken(true);
     setTimeout(() => setState("reading"), 1000);
+  };
+
+  const handleSendReply = async () => {
+    if (!replyText.trim()) return toast.error("لا يمكنك إرسال رد فارغ");
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("replies")
+        .insert({
+          letter_id: selectedLetter.id,
+          content_encrypted: replyText,
+          sender_type: 'recipient',
+          is_read_by_admin: false
+        });
+
+      if (error) throw error;
+
+      toast.success("تم إرسال ردك الملكي بنجاح");
+      setReplyText("");
+    } catch (err) {
+      console.error("Reply error:", err);
+      toast.error("حدث خطأ أثناء إرسال الرد");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,12 +223,9 @@ const RecipientPage = () => {
         )}
 
         {state === "reading" && selectedLetter && (
-          <motion.div key="reading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-4xl py-12 space-y-12">
-            <div className="flex justify-center">
-              <div className="w-full max-w-[800px] min-h-[900px] bg-parchment-pattern rough-edge shadow-manuscript relative p-12 md:p-24 flex flex-col items-stretch text-right font-amiri" dir="rtl">
-                {/* Scroll Top Edge */}
-                <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
-                
+          <motion.div key="reading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-5xl py-12 space-y-12">
+            <RoyalScroll>
+              <div className="flex flex-col items-stretch text-right font-amiri min-h-[700px]" dir="rtl">
                 <div className="mb-16">
                   <p className="text-secondary text-2xl font-bold">{selectedLetter.sender_name || "أحمد"}</p>
                   <p className="text-ink/40 text-sm font-cinzel tracking-widest uppercase">
@@ -213,7 +249,7 @@ const RecipientPage = () => {
                    </div>
                 </div>
               </div>
-            </div>
+            </RoyalScroll>
 
             {/* Reply Section */}
             <div className="max-w-2xl mx-auto space-y-6">
@@ -227,7 +263,13 @@ const RecipientPage = () => {
                   />
                   <div className="flex gap-4">
                     <button onClick={() => setState("gate")} className="btn-royal bg-transparent border-gold/20 text-ink/60 flex-1">العودة</button>
-                    <button className="btn-gold flex-[2]">ختم وإرسال الرد</button>
+                    <button 
+                      onClick={handleSendReply}
+                      disabled={loading}
+                      className="btn-gold flex-[2]"
+                    >
+                      {loading ? "جارٍ الختم..." : "ختم وإرسال الرد"}
+                    </button>
                   </div>
                </ParchmentCard>
             </div>
