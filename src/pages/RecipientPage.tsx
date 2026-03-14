@@ -4,16 +4,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import parchmentBg from "@/assets/parchment-bg.jpg";
 import waxSeal from "@/assets/wax-seal.png";
+import { toast } from "sonner"; // Assuming sonner is installed and imported
 
 type PageState = "loading" | "gate" | "answering" | "revealing" | "letters" | "error";
 
 interface LetterInfo {
   id: string;
   title?: string;
-  content_type: string;
+  content_type: "letter" | "poetry";
+  created_at: string;
+  unlock_at?: string | null;
+  unlock_latitude?: number | null;
+  unlock_longitude?: number | null;
   is_read: boolean;
   order_index: number;
-  created_at: string;
   questions: { id: string; question_text: string; question_order: number }[];
 }
 
@@ -133,9 +137,22 @@ const RecipientPage = () => {
         body: { letter_id: letterId, session_token: st },
       });
 
-      if (error || data?.error) return;
+      if (!data) throw new Error("لم يتم العثور على الرسالة");
+      
+      if (data.locked) {
+        toast.error(`هذه الرسالة مغلقة حتى ${new Date(data.unlock_at).toLocaleString("ar")}`, {
+          icon: '🔒',
+        });
+        setScrollRevealed(false);
+        setState("letters"); // Changed from setStep("list") to setState("letters")
+        return;
+      }
 
-      setLetterContent(data.letter);
+      if (data.letter) {
+        setLetterContent(data.letter);
+      } else {
+        setLetterContent(data);
+      }
     } catch {
       // Silent fail
     }
@@ -225,36 +242,64 @@ const RecipientPage = () => {
               </div>
 
               <div className="grid gap-4">
-                {letters.map((letter, i) => (
-                  <motion.button
-                    key={letter.id}
-                    onClick={() => handleSelectLetter(letter)}
-                    className="bg-parchment/80 border border-gold/30 rounded-sm p-6 text-right hover:border-gold hover:shadow-gold transition-all duration-300"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.15 }}
-                    whileHover={{ y: -3 }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img src={waxSeal} alt="" className="w-10 h-10" />
-                        <div>
-                          <p className="font-amiri text-lg text-secondary">
-                            {letter.title || (letter.content_type === "poetry" ? `قصيدة #${i + 1}` : `رسالة #${i + 1}`)}
-                          </p>
-                          <p className="font-cinzel text-xs text-muted-foreground">
-                            {new Date(letter.created_at).toLocaleDateString("ar")}
-                          </p>
+                {letters.map((letter, idx) => {
+                  const isLocked = letter.unlock_at && new Date(letter.unlock_at) > new Date();
+                  
+                  return (
+                    <motion.div
+                      key={letter.id}
+                      className={`group relative bg-parchment border border-gold/20 p-6 rounded-sm shadow-seal cursor-pointer hover:border-gold/50 transition-all ${
+                        isLocked ? "opacity-70 grayscale-[0.5]" : ""
+                      }`}
+                      onClick={() => !isLocked && handleSelectLetter(letter)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + idx * 0.1 }}
+                      whileHover={isLocked ? {} : { y: -4, scale: 1.02 }}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <img 
+                          src={waxSeal} 
+                          alt="" 
+                          className={`w-10 h-10 transition-transform group-hover:rotate-12 ${isLocked ? "sepia grayscale" : ""}`} 
+                        />
+                        <div className="text-left">
+                          <span className={`font-cinzel text-[10px] tracking-widest px-2 py-0.5 border rounded-full ${
+                            letter.content_type === "poetry" 
+                              ? "bg-burgundy/10 text-secondary border-gold/30" 
+                              : "bg-secondary/10 text-secondary border-gold/30"
+                          }`}>
+                            {letter.content_type === "poetry" ? "POETRY" : "LETTER"}
+                          </span>
                         </div>
                       </div>
-                      {letter.is_read ? (
-                        <span className="text-xs text-green-600 font-amiri">✓ مقروءة</span>
+
+                      <h3 className="font-amiri text-xl text-ink mb-1 group-hover:text-secondary transition-colors">
+                        {letter.title || `رسالة رقم ${idx + 1}`}
+                      </h3>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="font-amiri text-xs text-accent italic">
+                          {new Date(letter.created_at).toLocaleDateString("ar")}
+                        </p>
+                        {letter.is_read ? (
+                          <span className="text-[10px] text-green-600 font-amiri">✓ مقروءة</span>
+                        ) : (
+                          <span className="text-[10px] text-primary font-amiri animate-glow-pulse">جديدة ✦</span>
+                        )}
+                      </div>
+                      
+                      {isLocked ? (
+                        <div className="mt-4 flex items-center gap-2 text-secondary font-amiri text-sm">
+                          <span className="animate-pulse">🔒 مغلقة حتى {new Date(letter.unlock_at!).toLocaleString("ar")}</span>
+                        </div>
                       ) : (
-                        <span className="text-xs text-primary font-amiri animate-glow-pulse">جديدة ✦</span>
+                        <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 text-gold font-cinzel text-[10px] tracking-widest uppercase">
+                          Open Letter <span className="animate-bounce">⤖</span>
+                        </div>
                       )}
-                    </div>
-                  </motion.button>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -362,27 +407,23 @@ const RecipientPage = () => {
 
               {scrollRevealed && (
                 <motion.div
-                  className="rounded-sm shadow-seal overflow-hidden"
+                  className="mx-auto shadow-2xl overflow-hidden flex flex-col relative"
                   style={{
-                    backgroundColor: "#fdf8f5", // Fallback color that matches parchment
+                    width: '100%',
+                    maxWidth: '650px',
+                    minHeight: '900px',
                     backgroundImage: "url('/manuscript-bg.png')",
-                    backgroundSize: "100% 100%", // Stretch the decorative border vertically and horizontally
+                    backgroundSize: "100% 100%",
                     backgroundRepeat: "no-repeat",
-                    backgroundPosition: "center"
+                    backgroundPosition: "center",
+                    padding: '16% 12% 16% 12%'
                   }}
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   transition={{ duration: 1.2, ease: "easeOut" }}
                   dir="rtl"
                 >
-                  <div className="p-12 md:p-16 relative z-10" style={{ padding: "12% 10%" }}>
-                    {/* Ornamental top (can be removed if the background image already has it, keeping it for extra flair if needed) */}
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-                      <span className="text-gold text-xl">❈</span>
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-                    </div>
-
+                  <div className="flex-1 flex flex-col justify-start relative z-10 w-full h-full">
                     {letterContent ? (
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -394,7 +435,7 @@ const RecipientPage = () => {
                         <div className="text-right mb-10 border-b-2 border-double border-gold/30 pb-6 pr-4 border-r-4 border-r-gold/40">
                           <p className="font-cinzel-decorative text-2xl text-secondary mb-2">من: أحمد</p>
                           <p className="font-amiri text-xl text-ink">
-                            إلى: {letterContent.recipient_name || "صديقي الغالي"}
+                          إلى: {letterContent.recipient_name || "صديق مكتوب"}
                           </p>
                           <p className="font-amiri text-sm text-accent mt-3">
                             حُرر في: {new Date(letterContent.created_at).toLocaleDateString("ar")}
@@ -402,36 +443,27 @@ const RecipientPage = () => {
                         </div>
 
                         {/* Letter Content */}
-                        <div className={`font-amiri text-2xl text-ink leading-[2.5] whitespace-pre-wrap px-4 md:px-8 py-6 min-h-[200px] ${
+                        <div className={`font-amiri text-2xl text-ink leading-[2.5] whitespace-pre-wrap px-4 md:px-8 py-6 ${
                           letterContent.content_type === "poetry" ? "text-center" : "text-justify"
                         }`}>
                           {letterContent.content || "الرسالة فارغة..."}
                         </div>
 
                         {/* Royal Footer / Signature */}
-                        <div className="mt-12 pt-6 border-t-2 border-double border-gold/30 text-center">
-                          <img src={waxSeal} alt="" className="w-12 h-12 mx-auto mb-3 opacity-80" />
-                          <p className="font-cinzel-decorative text-xl text-secondary">
+                        <div className="text-center mt-12">
+                          <img src={waxSeal} alt="" className="w-16 h-16 mx-auto opacity-90 mix-blend-multiply" />
+                          <p className="font-cinzel-decorative text-2xl text-secondary mt-2">
                             أحمد
                           </p>
                         </div>
                       </motion.div>
                     ) : (
-                      <div className="text-center py-8">
-                        <p className="font-amiri text-muted-foreground animate-pulse">
-                          جارٍ فك التشفير...
+                      <div className="flex-1 flex items-center justify-center text-center">
+                        <p className="font-amiri text-2xl text-muted-foreground animate-pulse">
+                          جارٍ فك التشفير وفتح الرسالة الملكية...
                         </p>
                       </div>
                     )}
-
-                    {/* Ornamental bottom */}
-                    <div className="flex items-center gap-4 mt-8">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-                      <span className="text-gold text-xl">❈</span>
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-                    </div>
-
-                    {/* Reply section */}
                     {letterContent && (
                       <motion.div
                         className="mt-8 pt-6 border-t border-gold/20"

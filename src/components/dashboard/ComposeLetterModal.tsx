@@ -27,6 +27,7 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contentType, setContentType] = useState<"letter" | "poetry">("letter");
+  const [unlockAt, setUnlockAt] = useState<string>("");
   const [questions, setQuestions] = useState<Question[]>([{ question: "", answer: "" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -57,17 +58,20 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
     setError("");
 
     try {
+      const payload = {
+        recipient_id: recipientId,
+        title: title.trim(),
+        content: content.trim(),
+        content_type: contentType,
+        unlock_at: unlockAt || null,
+        questions: questions.map((q) => ({
+          question: q.question.trim(),
+          answer: q.answer.trim(),
+        })),
+      };
+
       const { data, error: fnError } = await supabase.functions.invoke("admin-send-letter", {
-        body: {
-          recipient_id: recipientId,
-          title: title.trim(),
-          content: content.trim(),
-          content_type: contentType,
-          questions: questions.map((q) => ({
-            question: q.question.trim(),
-            answer: q.answer.trim(),
-          })),
-        },
+        body: payload,
       });
 
       if (fnError) throw fnError;
@@ -131,6 +135,7 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
               {(["letter", "poetry"] as const).map((type) => (
                 <button
                   key={type}
+                  type="button"
                   onClick={() => setContentType(type)}
                   className={`px-4 py-2 rounded-sm font-amiri text-sm border transition-colors ${
                     contentType === type
@@ -163,6 +168,7 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
               <label className="font-amiri text-sm text-accent">أسئلة الأمان</label>
               {questions.length < 5 && (
                 <button
+                  type="button"
                   onClick={addQuestion}
                   className="font-cinzel text-xs text-primary hover:underline"
                 >
@@ -177,6 +183,7 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
                     <span className="font-cinzel text-xs text-accent">سؤال {i + 1}</span>
                     {questions.length > 1 && (
                       <button
+                        type="button"
                         onClick={() => removeQuestion(i)}
                         className="text-destructive text-xs hover:underline"
                       >
@@ -203,6 +210,23 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Vision 2035: Time-Locking */}
+          <div className="space-y-2 pt-4 border-t border-gold/10">
+            <label className="flex items-center gap-2 text-xs font-cinzel text-accent uppercase tracking-widest">
+              <span className="text-gold">🔒</span> إقفال زمني (اختياري)
+            </label>
+            <input
+              type="datetime-local"
+              value={unlockAt}
+              onChange={(e) => setUnlockAt(e.target.value)}
+              className="w-full bg-parchment-dark/30 border border-gold/20 rounded-sm px-4 py-3 font-amiri text-sm focus:outline-none focus:border-gold transition-colors"
+              dir="rtl"
+            />
+            <p className="text-[10px] text-muted-foreground font-amiri">
+              لن يتمكن المستلم من فتح هذه الرسالة قبل الوقت المحدد أعلاه.
+            </p>
           </div>
 
           {error && <p className="font-amiri text-destructive text-sm text-center">{error}</p>}

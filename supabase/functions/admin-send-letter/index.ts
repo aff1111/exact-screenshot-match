@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { recipient_id, title, content, content_type, questions } = body;
+    const { recipient_id, title, content, content_type, questions, unlock_at, unlock_latitude, unlock_longitude } = body;
 
     // Validate
     if (
@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
         content_encrypted: encryptedContent || content,
         content_type: content_type || "letter",
         order_index: nextOrder,
+        unlock_at: unlock_at ? new Date(unlock_at).toISOString() : null,
+        unlock_latitude,
+        unlock_longitude,
       })
       .select("id")
       .single();

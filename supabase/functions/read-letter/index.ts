@@ -73,17 +73,35 @@ Deno.serve(async (req) => {
       return errorResponse(500, "An error occurred");
     }
 
-    const { data: letterData } = await supabase
+    const { data: letterData, error: letterError } = await supabase
       .from("letters")
-      .select("id, content_encrypted, content_type, order_index, created_at, recipient_id")
+      .select("id, content_encrypted, content_type, order_index, created_at, recipient_id, unlock_at, recipients(display_label, name_encrypted)")
       .eq("id", letter_id)
       .eq("is_active", true)
       .single();
 
-    if (!letterData) {
-      return errorResponse(404, "Not found");
+    if (letterError || !letterData) {
+      return new Response(JSON.stringify({ error: "Letter not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
+    // Check Time-Lock
+    if (letterData.unlock_at && new Date(letterData.unlock_at) > new Date()) {
+      return new Response(
+        JSON.stringify({
+          error: "Letter is sealed",
+          locked: true,
+          unlock_at: letterData.unlock_at,
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
     // Decrypt content using SQL
     const { data: decrypted } = await supabase.rpc("decrypt_letter_content", {
       p_letter_id: letter_id,

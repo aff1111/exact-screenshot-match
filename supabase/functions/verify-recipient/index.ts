@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
         is_read: letter.is_read,
         order_index: letter.order_index,
         created_at: letter.created_at,
+        unlock_at: letter.unlock_at,
+        unlock_latitude: letter.unlock_latitude,
+        unlock_longitude: letter.unlock_longitude,
         questions: questions || [],
       });
     }
