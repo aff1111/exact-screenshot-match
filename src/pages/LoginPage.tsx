@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import waxSeal from "@/assets/wax-seal.png";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
+import { AuthService } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 
 const LoginPage = () => {
@@ -18,51 +20,50 @@ const LoginPage = () => {
   const [honeypot, setHoneypot] = useState("");
   const [questions, setQuestions] = useState({ q1: "", q2: "" });
 
+  const { signIn, signOut } = useAuth();
+
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     if (honeypot) return;
     setError("");
+
+    if (!email || !password) {
+      setError("الرجاء إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Random delay for timing attack prevention
       await new Promise((r) => setTimeout(r, 50 + Math.random() * 150));
 
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Use centralized AuthService via context
+      const { user: signedInUser } = await signIn(email.trim(), password);
 
-      if (authError) {
-        if (authError.message.includes("Email not confirmed")) {
-          setError("يرجى تأكيد بريدك الإلكتروني أولاً (راجع صندوق الوارد)");
-        } else if (authError.message === "Invalid login credentials") {
-          setError("بيانات الدخول غير صحيحة");
-        } else {
-          setError(authError.message || "بيانات الدخول غير صحيحة");
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Check if user is admin and get security questions
-      const { data: admin } = await supabase
+      // Load admin row via auth_user_id for robust mapping
+      const { data: admin, error: adminError } = await supabase
         .from("admin_users")
-        .select("security_question_1, security_question_2, failed_login_attempts, locked_until")
+        .select("id, security_question_1, security_question_2, failed_login_attempts, locked_until")
+        .eq("auth_user_id", signedInUser?.id)
         .single();
 
-      if (!admin) {
-        await supabase.auth.signOut();
-        setError("بيانات الدخول غير صحيحة");
-        setLoading(false);
+      if (adminError || !admin) {
+        await signOut();
+
+        const adminMessage = adminError?.message || 'غير موجود';
+        console.error('admin_users lookup failed', adminError);
+
+        setError(
+          `فشل التحقق من حساب المسؤول. تأكد من وجود صف admin_users لـ auth_user_id (${signedInUser?.id}). الخطأ: ${adminMessage}`
+        );
+
         return;
       }
 
-      // Check if locked
       if (admin.locked_until && new Date(admin.locked_until) > new Date()) {
-        await supabase.auth.signOut();
+        await signOut();
         setError("تم قفل الحساب مؤقتاً. حاول لاحقاً.");
-        setLoading(false);
         return;
       }
 
@@ -71,10 +72,16 @@ const LoginPage = () => {
         q2: admin.security_question_2,
       });
       setStep(2);
-    } catch {
-      setError("حدث خطأ. حاول مرة أخرى.");
+    } catch (err: any) {
+      const message = err?.message || "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى";
+      if (message.includes("Invalid login credentials") || message.includes("auth")) {
+        setError("بيانات الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور.");
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleStep2 = async (e: React.FormEvent) => {
