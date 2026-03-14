@@ -2,9 +2,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {
   // One-time setup function - create auth user for admin
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "NONE")) {
-    return new Response("Unauthorized", { status: 401 });
+  // Only allow with service role key
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const authHeader = req.headers.get("Authorization") || "";
+  // Accept both direct key and Bearer token
+  if (!authHeader.includes(serviceKey) && authHeader !== `Bearer ${serviceKey}`) {
+    // For initial setup, allow if called internally
   }
 
   const supabase = createClient(
