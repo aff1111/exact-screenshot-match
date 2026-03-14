@@ -52,11 +52,12 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { recipient_id, content, content_type, questions } = body;
+    const { recipient_id, title, content, content_type, questions } = body;
 
     // Validate
     if (
       !recipient_id || typeof recipient_id !== "string" ||
+      !title || typeof title !== "string" || title.length > 200 ||
       !content || typeof content !== "string" || content.length > 50000 ||
       !["letter", "poetry"].includes(content_type || "letter") ||
       !Array.isArray(questions) || questions.length < 1 || questions.length > 5
@@ -96,6 +97,7 @@ Deno.serve(async (req) => {
       .insert({
         recipient_id,
         admin_id: admin.id,
+        title,
         content_encrypted: encryptedContent || content,
         content_type: content_type || "letter",
         order_index: nextOrder,

@@ -9,6 +9,7 @@ type PageState = "loading" | "gate" | "answering" | "revealing" | "letters" | "e
 
 interface LetterInfo {
   id: string;
+  title?: string;
   content_type: string;
   is_read: boolean;
   order_index: number;
@@ -239,7 +240,7 @@ const RecipientPage = () => {
                         <img src={waxSeal} alt="" className="w-10 h-10" />
                         <div>
                           <p className="font-amiri text-lg text-secondary">
-                            {letter.content_type === "poetry" ? "📝 قصيدة" : "✉ رسالة"} #{i + 1}
+                            {letter.title || (letter.content_type === "poetry" ? `قصيدة #${i + 1}` : `رسالة #${i + 1}`)}
                           </p>
                           <p className="font-cinzel text-xs text-muted-foreground">
                             {new Date(letter.created_at).toLocaleDateString("ar")}
@@ -361,14 +362,21 @@ const RecipientPage = () => {
 
               {scrollRevealed && (
                 <motion.div
-                  className="bg-parchment/90 border border-gold/30 rounded-sm shadow-seal overflow-hidden"
+                  className="rounded-sm shadow-seal overflow-hidden"
+                  style={{
+                    backgroundColor: "#fdf8f5", // Fallback color that matches parchment
+                    backgroundImage: "url('/manuscript-bg.png')",
+                    backgroundSize: "100% 100%", // Stretch the decorative border vertically and horizontally
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center"
+                  }}
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   transition={{ duration: 1.2, ease: "easeOut" }}
                   dir="rtl"
                 >
-                  <div className="p-8 md:p-12">
-                    {/* Ornamental top */}
+                  <div className="p-12 md:p-16 relative z-10" style={{ padding: "12% 10%" }}>
+                    {/* Ornamental top (can be removed if the background image already has it, keeping it for extra flair if needed) */}
                     <div className="flex items-center gap-4 mb-8">
                       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
                       <span className="text-gold text-xl">❈</span>

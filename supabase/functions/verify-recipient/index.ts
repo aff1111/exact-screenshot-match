@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     // Get letters for this recipient with their questions (no content)
     const { data: letters } = await supabase
       .from("letters")
-      .select("id, content_type, is_read, order_index, created_at")
+      .select("id, title, content_type, is_read, order_index, created_at")
       .eq("recipient_id", recipientId)
       .eq("is_active", true)
       .order("order_index", { ascending: true });
@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
 
       lettersWithQuestions.push({
         id: letter.id,
+        title: letter.title,
         content_type: letter.content_type,
         is_read: letter.is_read,
         order_index: letter.order_index,

@@ -24,6 +24,7 @@ interface Props {
 
 const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) => {
   const [recipientId, setRecipientId] = useState("");
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contentType, setContentType] = useState<"letter" | "poetry">("letter");
   const [questions, setQuestions] = useState<Question[]>([{ question: "", answer: "" }]);
@@ -47,8 +48,8 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
   };
 
   const handleSubmit = async () => {
-    if (!recipientId || !content.trim() || questions.some((q) => !q.question.trim() || !q.answer.trim())) {
-      setError("يرجى ملء جميع الحقول");
+    if (!recipientId || !title.trim() || !content.trim() || questions.some((q) => !q.question.trim() || !q.answer.trim())) {
+      setError("يرجى ملء جميع الحقول بما فيها عنوان الرسالة");
       return;
     }
 
@@ -59,6 +60,7 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
       const { data, error: fnError } = await supabase.functions.invoke("admin-send-letter", {
         body: {
           recipient_id: recipientId,
+          title: title.trim(),
           content: content.trim(),
           content_type: contentType,
           questions: questions.map((q) => ({
@@ -107,6 +109,19 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="font-amiri text-sm text-accent block mb-1">عنوان الرسالة أو القصيدة</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="مثال: رسالة إلى صديقي، قصيدة عتاب..."
+              className="w-full bg-parchment border border-gold/30 rounded-sm px-3 py-2 font-amiri text-sm focus:outline-none focus:border-gold"
+              dir="rtl"
+            />
           </div>
 
           {/* Content Type */}
