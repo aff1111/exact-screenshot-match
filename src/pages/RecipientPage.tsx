@@ -32,13 +32,14 @@ const RecipientPage = () => {
     
     try {
       // Professional RPC call to verify recipient securely
-      const { data, error } = await supabase.rpc("verify_recipient_link", { p_token: token });
+      const { data, error } = await supabase.rpc("verify_recipient_link" as any, { p_token: token }) as { data: any, error: any };
       if (error || !data) throw error;
 
       setRecipient(data.recipient);
       setLetters(data.letters || []);
       setState("gate");
     } catch (err) {
+      console.error("Verification error:", err);
       setState("error");
     }
   };
@@ -70,13 +71,13 @@ const RecipientPage = () => {
   return (
     <div className="min-h-screen bg-[#0f0a05] selection:bg-gold/30 selection:text-gold relative overflow-hidden flex items-center justify-center p-4">
       {/* Royal Background Elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold/5 via-transparent to-transparent opacity-30 pointer-events-none" />
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold/10 via-transparent to-transparent opacity-40 pointer-events-none" />
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
       
       <AnimatePresence mode="wait">
         {state === "loading" && (
           <motion.div key="loader" exit={{ opacity: 0 }} className="text-center space-y-4">
-             <div className="w-16 h-16 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto" />
+             <div className="w-16 h-16 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto shadow-gold" />
              <p className="font-cinzel text-xs tracking-[0.5em] text-gold/40 uppercase">Loading Records</p>
           </motion.div>
         )}
@@ -185,7 +186,7 @@ const RecipientPage = () => {
         {state === "reading" && selectedLetter && (
           <motion.div key="reading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-4xl py-12 space-y-12">
             <div className="flex justify-center">
-              <div className="w-full max-w-[800px] min-h-[900px] bg-[#f8f1e7] shadow-manuscript relative p-12 md:p-24 flex flex-col items-stretch text-right font-amiri" dir="rtl">
+              <div className="w-full max-w-[800px] min-h-[900px] bg-parchment-pattern rough-edge shadow-manuscript relative p-12 md:p-24 flex flex-col items-stretch text-right font-amiri" dir="rtl">
                 {/* Scroll Top Edge */}
                 <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
                 

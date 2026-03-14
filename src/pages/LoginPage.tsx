@@ -142,15 +142,10 @@ const LoginPage = () => {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center relative overflow-hidden"
-      style={{
-        backgroundImage: `url(${parchmentBg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute inset-0 bg-parchment/60" />
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0f0a05]">
+      <div className="absolute inset-0 bg-parchment-pattern opacity-10 mix-blend-screen" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-burgundy/40 via-transparent to-gold/10" />
+      <div className="absolute inset-0 backdrop-blur-[200px]" />
 
       <motion.div
         className="relative z-10 w-full max-w-md mx-4"
