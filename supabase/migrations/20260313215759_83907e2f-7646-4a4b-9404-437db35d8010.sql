@@ -218,7 +218,7 @@ CREATE OR REPLACE FUNCTION public.verify_token(raw_token text)
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 DECLARE
     v_recipient_id uuid;
@@ -245,7 +245,7 @@ CREATE OR REPLACE FUNCTION public.verify_security_answer(
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 DECLARE
     v_stored_hash text;
@@ -274,7 +274,7 @@ CREATE OR REPLACE FUNCTION public.log_security_event(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 BEGIN
     INSERT INTO public.security_events (event_type, severity, ip_address, user_agent, token_hash_prefix, metadata)
@@ -292,7 +292,7 @@ CREATE OR REPLACE FUNCTION public.check_rate_limit(
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 DECLARE
     v_count integer;
@@ -315,7 +315,7 @@ CREATE OR REPLACE FUNCTION public.cleanup_old_request_logs()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 BEGIN
     DELETE FROM public.request_logs
@@ -331,7 +331,7 @@ CREATE OR REPLACE FUNCTION public.decrypt_letter_content(
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 DECLARE
     v_content text;
@@ -374,7 +374,7 @@ CREATE OR REPLACE FUNCTION public.decrypt_recipient_name(p_recipient_id uuid)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public
 AS $$
 DECLARE
     v_name text;

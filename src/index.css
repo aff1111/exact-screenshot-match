@@ -6,175 +6,169 @@
 
 @layer base {
   :root {
-    /* Royal Master Palette */
-    --parchment: 38 33% 93%;
-    --burgundy: 348 78% 16%;
-    --gold: 42 52% 54%;
-    --ink: 30 20% 12%;
-    --accent: 25 39% 39%;
+    /* Parchment / Royal theme */
+    --background: 38 33% 93%;          /* #F5F0E8 parchment */
+    --foreground: 348 78% 16%;         /* #6B0F1A burgundy-dark */
 
-    /* Semantic Mappings */
-    --background: var(--parchment);
-    --foreground: var(--burgundy);
+    --card: 38 33% 90%;
+    --card-foreground: 348 78% 16%;
 
-    --primary: var(--gold);
-    --primary-foreground: 38 33% 98%;
+    --popover: 38 33% 93%;
+    --popover-foreground: 348 78% 16%;
 
-    --secondary: var(--burgundy);
-    --secondary-foreground: 38 33% 98%;
+    --primary: 42 52% 54%;             /* #C9A84C gold */
+    --primary-foreground: 38 33% 96%;
+
+    --secondary: 348 78% 16%;         /* #6B0F1A burgundy */
+    --secondary-foreground: 38 33% 96%;
 
     --muted: 38 20% 85%;
     --muted-foreground: 25 30% 40%;
 
-    --accent-bg: var(--accent);
-    --accent-foreground: 38 33% 98%;
+    --accent: 25 39% 39%;             /* #8B5E3C brown */
+    --accent-foreground: 38 33% 96%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 38 25% 78%;
     --input: 38 25% 82%;
-    --ring: var(--gold);
-    --radius: 0.5rem;
+    --ring: 42 52% 54%;
 
-    /* Professional Shadows */
-    --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-royal: 0 20px 50px rgba(54, 11, 16, 0.1);
-    --shadow-gold: 0 10px 30px rgba(201, 168, 76, 0.2);
-  }
+    --radius: 0.25rem;
 
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-gold/30 selection:text-ink;
-    font-family: 'Amiri', serif;
-  }
+    /* Custom tokens */
+    --parchment: 38 33% 93%;
+    --parchment-dark: 38 25% 82%;
+    --gold: 42 52% 54%;
+    --gold-light: 42 60% 70%;
+    --gold-dark: 42 45% 40%;
+    --burgundy: 348 78% 16%;
+    --burgundy-light: 348 60% 28%;
+    --brown: 25 39% 39%;
+    --brown-light: 25 30% 55%;
+    --ink: 30 20% 12%;
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: 'Cinzel', serif;
-    @apply tracking-wider;
+    /* Gradients */
+    --gradient-parchment: linear-gradient(180deg, hsl(38 33% 96%), hsl(38 33% 88%));
+    --gradient-gold: linear-gradient(135deg, hsl(42 52% 54%), hsl(42 60% 70%));
+    --gradient-royal: linear-gradient(180deg, hsl(348 78% 16%), hsl(348 60% 22%));
+    --gradient-seal: radial-gradient(circle, hsl(348 78% 20%), hsl(348 78% 12%));
+
+    /* Shadows */
+    --shadow-parchment: 0 4px 20px hsl(38 25% 70% / 0.5);
+    --shadow-gold: 0 4px 15px hsl(42 52% 54% / 0.3);
+    --shadow-seal: 0 8px 30px hsl(348 78% 16% / 0.3);
+
+    --sidebar-background: 38 33% 90%;
+    --sidebar-foreground: 348 78% 16%;
+    --sidebar-primary: 42 52% 54%;
+    --sidebar-primary-foreground: 38 33% 96%;
+    --sidebar-accent: 38 20% 85%;
+    --sidebar-accent-foreground: 348 78% 16%;
+    --sidebar-border: 38 25% 78%;
+    --sidebar-ring: 42 52% 54%;
   }
 }
 
-@layer components {
-  .btn-royal {
-    @apply px-6 py-2.5 bg-secondary text-secondary-foreground font-cinzel text-xs tracking-[0.2em] uppercase border border-gold/30 shadow-md hover:shadow-royal active:scale-95 transition-all duration-300;
+@layer base {
+  * {
+    @apply border-border;
   }
 
-  .btn-gold {
-    @apply px-6 py-2.5 bg-primary text-primary-foreground font-cinzel text-xs tracking-[0.2em] uppercase border border-white/20 shadow-lg hover:shadow-gold active:scale-95 transition-all duration-300;
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Amiri', serif;
   }
 
-  .input-royal {
-    @apply w-full bg-parchment/50 border border-gold/20 rounded-sm px-4 py-3 font-amiri text-ink focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all placeholder:text-accent/30;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', serif;
   }
 
-  .card-parchment {
-    @apply bg-white/40 backdrop-blur-md border border-gold/10 shadow-royal rounded-sm p-8;
+  /* RTL auto-detect for Arabic text */
+  [dir="rtl"], .rtl {
+    font-family: 'Amiri', serif;
+    direction: rtl;
+    text-align: right;
   }
 }
 
 @layer utilities {
-  .text-ink {
-    color: hsl(var(--ink));
-  }
-
-  .text-burgundy {
-    color: hsl(var(--burgundy));
-  }
-
-  .text-gold {
-    color: hsl(var(--gold));
-  }
-
   .font-amiri {
     font-family: 'Amiri', serif;
   }
-
   .font-cinzel {
     font-family: 'Cinzel', serif;
   }
-
   .font-cinzel-decorative {
     font-family: 'Cinzel Decorative', serif;
   }
-
-  .bg-parchment-pattern {
-    background-color: #f4ecd8;
-    background-image:
-      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E"),
-      linear-gradient(to bottom, rgba(74, 55, 33, 0.05) 0%, transparent 50%, rgba(74, 55, 33, 0.05) 100%);
-    background-blend-mode: multiply, normal, multiply;
-    position: relative;
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+  .text-burgundy {
+    color: hsl(var(--burgundy));
+  }
+  .text-brown {
+    color: hsl(var(--brown));
+  }
+  .text-ink {
+    color: hsl(var(--ink));
+  }
+  .text-parchment {
+    color: hsl(var(--parchment));
+  }
+  .bg-parchment {
+    background-color: hsl(var(--parchment));
+  }
+  .bg-parchment-dark {
+    background-color: hsl(var(--parchment-dark));
+  }
+  .bg-gold {
+    background-color: hsl(var(--gold));
+  }
+  .bg-burgundy {
+    background-color: hsl(var(--burgundy));
+  }
+  .bg-brown {
+    background-color: hsl(var(--brown));
+  }
+  .bg-gradient-parchment {
+    background: var(--gradient-parchment);
+  }
+  .bg-gradient-gold {
+    background: var(--gradient-gold);
+  }
+  .bg-gradient-royal {
+    background: var(--gradient-royal);
+  }
+  .shadow-parchment {
+    box-shadow: var(--shadow-parchment);
+  }
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+  .shadow-seal {
+    box-shadow: var(--shadow-seal);
+  }
+  .border-gold {
+    border-color: hsl(var(--gold));
+  }
+  .border-burgundy {
+    border-color: hsl(var(--burgundy));
   }
 
-  .bg-parchment-pattern::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 20% 30%, rgba(139, 110, 75, 0.05) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(139, 110, 75, 0.05) 0%, transparent 40%);
-    pointer-events: none;
+  /* Ornamental divider */
+  .ornament-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
-
-  .rough-edge {
-    filter: url(#rough-paper);
-  }
-
-  .shadow-royal {
-    box-shadow:
-      0 10px 30px -10px rgba(54, 11, 16, 0.2),
-      0 4px 10px -2px rgba(54, 11, 16, 0.1);
-  }
-
-  .animate-ink-reveal {
-    mask-image: linear-gradient(to right, black 50%, transparent 50%);
-    mask-size: 200% 100%;
-    mask-position: 100% 0;
-    animation: ink-reveal 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-  }
-
-  @keyframes ink-reveal {
-    from {
-      mask-position: 100% 0;
-    }
-
-    to {
-      mask-position: 0 0;
-    }
-  }
-
-  .shimmer-gold {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .shimmer-gold::after {
+  .ornament-divider::before,
+  .ornament-divider::after {
     content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg,
-        transparent,
-        rgba(201, 168, 76, 0.1),
-        transparent);
-    transform: rotate(45deg);
-    animation: shimmer 3s infinite;
-  }
-
-  @keyframes shimmer {
-    from {
-      transform: translateX(-100%) rotate(45deg);
-    }
-
-    to {
-      transform: translateX(100%) rotate(45deg);
-    }
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--gold)), transparent);
   }
 }

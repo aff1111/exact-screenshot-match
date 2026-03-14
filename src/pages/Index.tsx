@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import waxSeal from "@/assets/wax-seal.png";
+import parchmentBg from "@/assets/parchment-bg.jpg";
 
 const OrnamentDivider = () => (
   <div className="flex items-center gap-4 my-8">
@@ -14,10 +15,16 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-parchment-pattern overflow-hidden">
-      {/* Dynamic Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent pointer-events-none" />
-      <div className="absolute inset-0 bg-radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.05) 100%)" />
+    <div
+      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      style={{
+        backgroundImage: `url(${parchmentBg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-parchment/60" />
 
       {/* Content */}
       <motion.div
