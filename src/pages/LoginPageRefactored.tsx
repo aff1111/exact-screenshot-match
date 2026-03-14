@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
+import { AuthService } from '@/services/api';
 import { isValidEmail, formatDate } from '@/lib/utils';
 import { MESSAGES } from '@/constants';
 
@@ -35,6 +36,7 @@ const LoginPageRefactored = () => {
     q1: '',
     q2: '',
   });
+  const [securityQuestionObjects, setSecurityQuestionObjects] = useState<any[]>([]);
   const [attemptCount, setAttemptCount] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
 
@@ -100,11 +102,27 @@ const LoginPageRefactored = () => {
         await signIn(formData.email, formData.password);
 
         // If successful, proceed to security verification
-        // TODO: Fetch security questions from user profile
-        setSecurityQuestions({
-          q1: 'ما هو اسم حيوانك الأليف المفضل؟',
-          q2: 'ما هي مدينة ولادتك؟',
-        });
+        // Fetch security questions from user profile (fresh)
+        try {
+          const currentUser = await AuthService.getCurrentUser();
+          if (currentUser?.security_questions && currentUser.security_questions.length >= 2) {
+            const qs = currentUser.security_questions.slice(0, 2);
+            setSecurityQuestionObjects(qs);
+            setSecurityQuestions({ q1: qs[0].question, q2: qs[1].question });
+          } else {
+            setSecurityQuestions({
+              q1: 'ما هو اسم حيوانك الأليف المفضل؟',
+              q2: 'ما هي مدينة ولادتك؟',
+            });
+            setSecurityQuestionObjects([]);
+          }
+        } catch (err) {
+          setSecurityQuestions({
+            q1: 'ما هو اسم حيوانك الأليف المفضل؟',
+            q2: 'ما هي مدينة ولادتك؟',
+          });
+          setSecurityQuestionObjects([]);
+        }
         setStep('security');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.ERROR.NETWORK;
@@ -155,9 +173,28 @@ const LoginPageRefactored = () => {
       try {
         await new Promise((resolve) => setTimeout(resolve, getRandomDelay()));
 
-        // TODO: Verify security answers via backend
-        // For now, assume verification passes
-        const answersCorrect = true; // Replace with actual verification
+        // Verify answers using stored question hashes (client-side compare)
+        let answersCorrect = false;
+
+        try {
+          if (securityQuestionObjects && securityQuestionObjects.length >= 2) {
+            const a1 = btoa(securityAnswers.answer1.toLowerCase());
+            const a2 = btoa(securityAnswers.answer2.toLowerCase());
+
+            const q1 = securityQuestionObjects[0];
+            const q2 = securityQuestionObjects[1];
+
+            if (q1?.answer_hash && q2?.answer_hash && a1 === q1.answer_hash && a2 === q2.answer_hash) {
+              answersCorrect = true;
+            }
+          } else {
+            // Fallback: try server-side verification for recipients (if applicable)
+            // If no question objects available, treat as failure to be safe
+            answersCorrect = false;
+          }
+        } catch (verifyErr) {
+          answersCorrect = false;
+        }
 
         if (answersCorrect) {
           // Reset attempts on success
