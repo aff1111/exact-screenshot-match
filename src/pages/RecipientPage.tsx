@@ -23,8 +23,6 @@ const RecipientPage = () => {
   const [sealBroken, setSealBroken] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
-  const [decryptedContent, setDecryptedContent] = useState<string>("");
 
   useEffect(() => {
     fetchRecipientData();
@@ -32,19 +30,13 @@ const RecipientPage = () => {
 
   const fetchRecipientData = async () => {
     if (!token) return setState("error");
-
+    
     try {
-      const { data, error } = await supabase.functions.invoke("verify-recipient", {
-        body: JSON.stringify({ token }),
-      });
+      const { data, error } = await supabase.rpc("verify_recipient_link" as any, { p_token: token }) as { data: any, error: any };
+      if (error || !data) throw error;
 
-      if (error) throw error;
-      if (!data) throw new Error("No recipient data");
-
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-
-      setRecipient(parsed.recipient);
-      setLetters(parsed.letters || []);
+      setRecipient(data.recipient);
+      setLetters(data.letters || []);
       setState("gate");
     } catch (err) {
       console.error("Verification error:", err);
@@ -62,39 +54,23 @@ const RecipientPage = () => {
   };
 
   const handleVerifyQuestions = async () => {
-    if (!selectedLetter) return;
-
     setLoading(true);
     try {
-      const answersArray = Object.entries(answers)
-        .filter(([, value]) => typeof value === "string" && value.trim().length > 0)
-        .map(([questionId, answer]) => ({ question_id: questionId, answer: answer.trim() }));
-
-      if (answersArray.length === 0) {
-        toast.error("يرجى إدخال إجابات الأسئلة");
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke("answer-questions", {
-        body: JSON.stringify({
-          letter_id: selectedLetter.id,
-          answers: answersArray,
-        }),
-      });
+      const { data: isCorrect, error } = await supabase.rpc("verify_security_answer" as any, {
+        p_token: token,
+        p_answers: answers
+      }) as { data: boolean, error: any };
 
       if (error) throw error;
 
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (!parsed?.session_token) {
-        throw new Error("فشل في الحصول على رمز الجلسة");
+      if (isCorrect) {
+        setState("revealing");
+      } else {
+        toast.error("إجابات الأمان غير صحيحة");
       }
-
-      setSessionToken(parsed.session_token);
-      setState("revealing");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Verification error:", err);
-      toast.error(err?.message || "حدث خطأ أثناء التحقق");
+      toast.error("حدث خطأ أثناء التحقق");
     } finally {
       setLoading(false);
     }
@@ -102,63 +78,39 @@ const RecipientPage = () => {
 
   const handleBreakSeal = async () => {
     setSealBroken(true);
-
-    if (!selectedLetter?.id || !sessionToken) {
-      toast.error("لا يوجد رمز جلسة صالح. يرجى إعادة المحاولة.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("read-letter", {
-        body: JSON.stringify({
-          letter_id: selectedLetter.id,
-          session_token: sessionToken,
-        }),
-      });
-
-      if (error) throw error;
-
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-
-      if (parsed?.letter?.content) {
-        setDecryptedContent(parsed.letter.content);
+    
+    if (selectedLetter?.id) {
+      try {
+        await (supabase.rpc as any)("decrypt_letter_content", {
+          p_letter_id: selectedLetter.id,
+          p_session_token: "SESSION_LEGACY" 
+        });
+      } catch (e) {
+        console.warn("Read tracking failed, but proceeding.");
       }
-
-      setState("reading");
-    } catch (err) {
-      console.error("Read letter error:", err);
-      toast.error("فشل فتح الرسالة. تأكد من صحة الإجابات أو أعد المحاولة.");
-      setState("answering");
-      setSealBroken(false);
-    } finally {
-      setLoading(false);
     }
+
+    setTimeout(() => setState("reading"), 1000);
   };
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return toast.error("لا يمكنك إرسال رد فارغ");
-    if (!selectedLetter?.id || !sessionToken) {
-      toast.error("عفواً، توجد مشكلة في الجلسة. حاول فتح الرسالة مجدداً.");
-      return;
-    }
-
+    
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("submit-reply", {
-        body: JSON.stringify({
+      const { error } = await supabase
+        .from("replies")
+        .insert({
           letter_id: selectedLetter.id,
-          session_token: sessionToken,
-          content: replyText.trim(),
-        }),
-      });
+          content_encrypted: replyText,
+          sender_type: 'recipient',
+          is_read_by_admin: false
+        });
 
       if (error) throw error;
 
       toast.success("تم إرسال ردك الملكي بنجاح");
       setReplyText("");
-
-      // Optionally refresh replies view later
     } catch (err) {
       console.error("Reply error:", err);
       toast.error("حدث خطأ أثناء إرسال الرد");
@@ -298,7 +250,7 @@ const RecipientPage = () => {
                     {selectedLetter.title}
                    </h1>
                    <div className="text-2xl md:text-3xl leading-[2.2] text-ink/90">
-                     <InkWritingText text={decryptedContent || selectedLetter.content || ""} speed={50} />
+                     <InkWritingText text={selectedLetter.content} speed={50} />
                    </div>
                 </div>
 

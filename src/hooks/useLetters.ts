@@ -5,7 +5,6 @@ interface SendPayload {
   recipientId: string;
   title: string;
   content: string;
-  securityQuestions?: Array<{ question: string; answer: string }>;
 }
 
 export function useLetters(adminId?: string | null) {
@@ -40,8 +39,7 @@ export function useLetters(adminId?: string | null) {
           adminId,
           payload.recipientId,
           payload.title,
-          payload.content,
-          payload.securityQuestions || []
+          payload.content
         );
         // refresh recipients/letters if needed
         await fetchRecipients();

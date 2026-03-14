@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { RecipientService } from "@/services/api";
 import { toast } from "sonner";
 import ParchmentCard from "@/components/ui/ParchmentCard";
 import { cn } from "@/lib/utils";
@@ -153,19 +152,14 @@ const RecipientsList = ({ recipients, onViewReplies }: Props) => {
 
                   <div className="flex flex-wrap items-center gap-3">
                     <button 
-                      onClick={async () => {
-                        try {
-                          const token = await RecipientService.regenerateRecipientToken(recipient.id);
-                          const link = `${window.location.origin}/s/${token}`;
-                          await navigator.clipboard.writeText(link);
-                          toast.success("تم تحديث الرابط ونسخه بنجاح");
-                        } catch (err: any) {
-                          toast.error(`فشل الحصول على الرابط: ${err.message}`);
-                        }
+                      onClick={() => {
+                        const link = `${window.location.origin}/s/${recipient.token}`;
+                        navigator.clipboard.writeText(link);
+                        toast.success("تم نسخ الرابط الملكي");
                       }}
                       className="btn-royal py-2 px-5 text-[10px] border-gold/40 bg-gold/10 text-gold hover:bg-gold hover:text-white"
                     >
-                      تجديد ونسخ الرابط
+                      نسخ الرابط
                     </button>
                     
                     <button 

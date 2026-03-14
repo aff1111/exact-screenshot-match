@@ -88,11 +88,10 @@ export class AuthService {
       });
 
       if (error) {
-        const message = error.message || 'بيانات الدخول غير صحيحة أو الحساب غير مسجل';
         throw new ApplicationError(
           ErrorCode.AUTH_INVALID_CREDENTIALS,
-          message,
-          'بيانات الدخول غير صحيحة أو الحساب غير موجود، استخدم تسجيل جديد أو تأكد من بيانات الاعتماد'
+          error.message,
+          'بيانات الدخول غير صحيحة'
         );
       }
 
@@ -201,36 +200,28 @@ export class RecipientService {
 
   static async createRecipient(
     adminId: string,
-    displayLabel: string,
-    maxUses?: number | null,
-    expiresAt?: string | null
-  ): Promise<{ recipient: Recipient; token: string }> {
+    email: string
+  ): Promise<Recipient> {
     try {
+      // Generate token
       const token = this.generateToken();
-
-      const { data: tokenHash, error: hashError } = await supabase.rpc("hash_answer", {
-        p_answer: token,
-      });
-
-      if (hashError) throw hashError;
 
       const { data, error } = await supabase
         .from('recipients')
         .insert({
           admin_id: adminId,
-          name_encrypted: displayLabel,
-          display_label: displayLabel,
-          token_hash: (tokenHash as string) || '',
-          max_uses: maxUses || null,
-          expires_at: expiresAt || null,
-          is_active: true,
+          email,
+          token,
+          is_verified: false,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      return { recipient: data as Recipient, token };
+      // TODO: Send email with token
+
+      return data as Recipient;
     } catch (error) {
       Logger.error(error);
       throw error;
@@ -242,22 +233,6 @@ export class RecipientService {
       const { error } = await supabase.from('recipients').delete().eq('id', id);
 
       if (error) throw error;
-    } catch (error) {
-      Logger.error(error);
-      throw error;
-    }
-  }
-
-  static async regenerateRecipientToken(recipientId: string): Promise<string> {
-    try {
-      const { data: token, error } = await supabase.rpc('regenerate_recipient_token', {
-        p_recipient_id: recipientId,
-      });
-
-      if (error) throw error;
-      if (!token) throw new Error('Unable to generate a new token');
-
-      return token as string;
     } catch (error) {
       Logger.error(error);
       throw error;
@@ -332,65 +307,27 @@ export class LetterService {
     adminId: string,
     recipientId: string,
     title: string,
-    content: string,
-    securityQuestions: Array<{ question: string; answer: string }> = []
+    content: string
   ): Promise<Letter> {
     try {
-      // Encrypt content through SQL function if configured
-      let encryptedContent = content;
-      const { data: encrypted, error: encryptError } = await supabase.rpc('encrypt_content', {
-        p_content: content,
-      });
-
-      if (!encryptError && encrypted) {
-        encryptedContent = encrypted as string;
-      }
-
       const { data, error } = await supabase
         .from('letters')
         .insert({
           admin_id: adminId,
           recipient_id: recipientId,
           title,
-          content_encrypted: encryptedContent,
-          content_type: 'letter',
-          is_read: false,
-          is_active: true,
-          order_index: 1,
+          content,
+          is_revealed: false,
         })
         .select()
         .single();
 
-      if (error || !data) throw error || new Error('Failed to create letter');
-
-      const letter = data as Letter;
-
-      if (securityQuestions.length > 0) {
-        for (let i = 0; i < securityQuestions.length; i++) {
-          const q = securityQuestions[i];
-          if (!q.question.trim() || !q.answer.trim()) continue;
-
-          const { data: answerHash, error: hashError } = await supabase.rpc('hash_answer', {
-            p_answer: q.answer.trim(),
-          });
-
-          if (hashError) throw hashError;
-
-          const { error: qError } = await supabase.from('security_questions').insert({
-            letter_id: letter.id,
-            question_text: q.question.trim(),
-            answer_hash: (answerHash as string) || '',
-            question_order: i + 1,
-          });
-
-          if (qError) throw qError;
-        }
-      }
+      if (error) throw error;
 
       // Log action
-      await SecurityService.logAction(adminId, 'letter_created', { letter_id: letter.id });
+      await SecurityService.logAction(adminId, 'letter_created', { letter_id: data.id });
 
-      return letter;
+      return data as Letter;
     } catch (error) {
       Logger.error(error);
       throw error;
