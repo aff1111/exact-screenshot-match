@@ -35,7 +35,13 @@ const LoginPage = () => {
       });
 
       if (authError) {
-        setError("بيانات الدخول غير صحيحة");
+        if (authError.message.includes("Email not confirmed")) {
+          setError("يرجى تأكيد بريدك الإلكتروني أولاً (راجع صندوق الوارد)");
+        } else if (authError.message === "Invalid login credentials") {
+          setError("بيانات الدخول غير صحيحة");
+        } else {
+          setError(authError.message || "بيانات الدخول غير صحيحة");
+        }
         setLoading(false);
         return;
       }
