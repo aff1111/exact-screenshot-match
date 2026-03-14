@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION public.encrypt_content(p_content text)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_encryption_key text;
@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION public.hash_answer(p_answer text)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
     RETURN crypt(p_answer, gen_salt('bf', 12));

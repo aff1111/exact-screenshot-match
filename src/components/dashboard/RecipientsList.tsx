@@ -18,6 +18,10 @@ interface Props {
 
 const RecipientsList = ({ recipients, onSelectRecipient, onRefresh }: Props) => {
   const [toggling, setToggling] = useState<string | null>(null);
+  const [regeneratingFor, setRegeneratingFor] = useState<Recipient | null>(null);
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState("");
 
   const toggleActive = async (id: string, currentState: boolean) => {
     setToggling(id);
@@ -27,6 +31,49 @@ const RecipientsList = ({ recipients, onSelectRecipient, onRefresh }: Props) => 
       .eq("id", id);
     onRefresh();
     setToggling(null);
+  };
+
+  const handleRegenerateClick = (e: React.MouseEvent, r: Recipient) => {
+    e.stopPropagation();
+    setRegeneratingFor(r);
+    setGeneratedLink("");
+    setError("");
+  };
+
+  const handleConfirmRegenerate = async () => {
+    if (!regeneratingFor) return;
+    setIsGenerating(true);
+    setError("");
+
+    try {
+      const rawToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      const { data: tokenHash, error: hashError } = await supabase.rpc("hash_answer", {
+        p_answer: rawToken,
+      });
+
+      if (hashError) throw hashError;
+
+      const { error: updateError } = await supabase
+        .from("recipients")
+        .update({ token_hash: tokenHash })
+        .eq("id", regeneratingFor.id);
+
+      if (updateError) throw updateError;
+
+      const baseUrl = window.location.origin;
+      setGeneratedLink(`${baseUrl}/s/${rawToken}`);
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ أثناء إنشاء الرابط");
+    }
+    
+    setIsGenerating(false);
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(generatedLink);
   };
 
   return (
@@ -78,19 +125,104 @@ const RecipientsList = ({ recipients, onSelectRecipient, onRefresh }: Props) => 
                       {r.is_active ? "نشط" : "معطّل"}
                     </span>
                   </td>
-                  <td className="text-center py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                  <td className="text-center py-3 px-4 flex justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => toggleActive(r.id, r.is_active)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleActive(r.id, r.is_active);
+                      }}
                       disabled={toggling === r.id}
                       className="font-cinzel text-xs text-accent border border-gold/30 px-3 py-1 rounded-sm hover:bg-parchment-dark transition-colors disabled:opacity-50"
                     >
                       {toggling === r.id ? "..." : r.is_active ? "تعطيل" : "تفعيل"}
+                    </button>
+                    <button
+                      onClick={(e) => handleRegenerateClick(e, r)}
+                      className="font-cinzel text-xs text-secondary border border-secondary/50 px-3 py-1 rounded-sm hover:bg-secondary/10 transition-colors"
+                    >
+                      رابط جديد
                     </button>
                   </td>
                 </motion.tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Regenerate Link Modal */}
+      {regeneratingFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <motion.div
+            className="bg-parchment border border-gold/30 rounded-sm p-6 w-full max-w-md shadow-seal"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            dir="rtl"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-cinzel text-xl text-secondary">إعادة إنشاء رابط</h2>
+              {generatedLink ? null : (
+                <button onClick={() => setRegeneratingFor(null)} className="text-accent hover:text-secondary text-xl">✕</button>
+              )}
+            </div>
+
+            {generatedLink ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-sm p-4">
+                  <p className="font-amiri text-green-800 text-sm mb-2">✓ تم إنشاء رابط جديد بنجاح للمستلم!</p>
+                  <p className="font-amiri text-xs text-muted-foreground mb-3">
+                    انسخ الرابط وأرسله للمستلم. الرابط القديم لن يعمل بعد الآن.
+                  </p>
+                  <div className="bg-parchment border border-gold/30 rounded-sm p-2 break-all font-mono text-xs text-left" dir="ltr">
+                    {generatedLink}
+                  </div>
+                  <button
+                    onClick={copyLink}
+                    className="mt-3 w-full py-2 font-cinzel text-xs bg-secondary text-secondary-foreground border border-gold rounded-sm hover:bg-burgundy-light"
+                  >
+                    نسخ الرابط
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setRegeneratingFor(null);
+                    setGeneratedLink("");
+                    onRefresh();
+                  }}
+                  className="w-full py-2 font-cinzel text-xs text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark"
+                >
+                  إغلاق
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="font-amiri text-sm text-ink mb-4">
+                  هل أنت متأكد من إنشاء رابط جديد لـ <span className="font-bold text-secondary">{regeneratingFor.display_label}</span>؟
+                  <br /><br />
+                  <span className="text-destructive">الرابط القديم سيتوقف عن العمل فوراً، ولن يتمكن المستلم من الدخول إلا بالرابط الجديد.</span>
+                </p>
+
+                {error && <p className="font-amiri text-destructive text-sm text-center">{error}</p>}
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setRegeneratingFor(null)}
+                    disabled={isGenerating}
+                    className="flex-1 py-2 font-cinzel text-xs text-accent border border-gold/30 rounded-sm hover:bg-parchment-dark disabled:opacity-50"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={handleConfirmRegenerate}
+                    disabled={isGenerating}
+                    className="flex-[2] py-2 font-cinzel text-sm bg-destructive text-destructive-foreground border border-destructive/50 shadow-seal hover:bg-destructive/90 transition-colors disabled:opacity-50 rounded-sm"
+                  >
+                    {isGenerating ? "جارٍ الإنشاء..." : "إنشاء رابط جديد"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
         </div>
       )}
     </div>

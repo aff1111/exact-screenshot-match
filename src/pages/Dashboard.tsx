@@ -9,8 +9,9 @@ import RecipientsList from "@/components/dashboard/RecipientsList";
 import SecurityLog from "@/components/dashboard/SecurityLog";
 import ConversationThread from "@/components/dashboard/ConversationThread";
 import AddRecipientModal from "@/components/dashboard/AddRecipientModal";
+import AccountSettings from "@/components/dashboard/AccountSettings";
 
-type Tab = "compose" | "recipients" | "security" | "sessions" | "analytics";
+type Tab = "compose" | "recipients" | "security" | "sessions" | "analytics" | "settings";
 
 interface Recipient {
   id: string;
@@ -93,6 +94,7 @@ const Dashboard = () => {
     { key: "security", label: "سجل الأمان", labelEn: "Security", icon: "🛡" },
     { key: "sessions", label: "الجلسات", labelEn: "Sessions", icon: "🔑" },
     { key: "analytics", label: "التحليلات", labelEn: "Analytics", icon: "📊" },
+    { key: "settings", label: "الإعدادات", labelEn: "Settings", icon: "⚙️" },
   ];
 
   return (
@@ -189,6 +191,7 @@ const Dashboard = () => {
                 {activeTab === "security" && <SecurityLog />}
                 {activeTab === "sessions" && <SessionsPanel />}
                 {activeTab === "analytics" && <AnalyticsPanel recipients={recipients} />}
+                {activeTab === "settings" && <AccountSettings adminId={adminId!} />}
               </motion.div>
             )}
           </AnimatePresence>
