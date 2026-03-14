@@ -3,25 +3,31 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 Deno.serve(async () => {
   try {
     const url = Deno.env.get("SUPABASE_URL")!;
-    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const userId = "67b197a8-eb67-46de-9341-a65b2550f981";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     
-    // Update password directly
-    const res = await fetch(`${url}/auth/v1/admin/users/${userId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${key}`,
-        "apikey": key,
-      },
-      body: JSON.stringify({ 
-        password: "zarzor2006",
-        email_confirm: true,
-      }),
+    const supabase = createClient(url, anonKey);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: "ahmedromu4@gmail.com",
+      password: "zarzor2006",
     });
 
-    const result = await res.json();
-    return Response.json({ success: res.ok, result });
+    if (error) {
+      return Response.json({ success: false, error: error.message, code: error.status });
+    }
+
+    // Also check admin_users
+    const { data: admin, error: adminErr } = await supabase
+      .from("admin_users")
+      .select("id, email, auth_user_id, security_question_1, security_question_2")
+      .single();
+
+    return Response.json({ 
+      success: true, 
+      user_id: data.user?.id,
+      admin,
+      adminErr: adminErr?.message,
+    });
   } catch (e) {
     return Response.json({ error: String(e) }, { status: 500 });
   }
