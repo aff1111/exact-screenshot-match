@@ -23,6 +23,7 @@ interface LetterInfo {
 
 interface LetterContent {
   id: string;
+  title?: string;
   content: string;
   content_type: string;
   created_at: string;
@@ -151,7 +152,11 @@ const RecipientPage = () => {
       if (data.letter) {
         setLetterContent(data.letter);
       } else {
-        setLetterContent(data);
+        // Fallback for direct data objects
+        setLetterContent({
+          ...data,
+          content: data.content || data.content_encrypted || ""
+        });
       }
     } catch {
       // Silent fail
@@ -418,12 +423,15 @@ const RecipientPage = () => {
                     backgroundPosition: "center",
                     padding: '16% 12% 16% 12%'
                   }}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  initial={{ opacity: 0, scale: 0.9, rotateX: -20 }}
+                  animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                  transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
                   dir="rtl"
                 >
-                  <div className="flex-1 flex flex-col justify-start relative z-10 w-full h-full">
+                  {/* Luxury Texture Overlay */}
+                  <div className="absolute inset-0 bg-noise-overlay opacity-[0.03] pointer-events-none" />
+                  
+                  <div className="flex-1 flex flex-col items-stretch relative z-10 w-full h-full">
                     {letterContent ? (
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -432,29 +440,48 @@ const RecipientPage = () => {
                         className="relative"
                       >
                         {/* Royal Header */}
-                        <div className="text-right mb-10 border-b-2 border-double border-gold/30 pb-6 pr-4 border-r-4 border-r-gold/40">
-                          <p className="font-cinzel-decorative text-2xl text-secondary mb-2">من: أحمد</p>
-                          <p className="font-amiri text-xl text-ink">
-                          إلى: {letterContent.recipient_name || "صديق مكتوب"}
+                        <div className="text-right mb-12 border-b-2 border-double border-gold/40 pb-8 relative">
+                          <div className="absolute top-0 right-0 w-16 h-1 bg-gold/30 -mr-4" />
+                          <p className="font-cinzel text-3xl text-secondary mb-3 tracking-widest drop-shadow-sm uppercase">من: أحمد</p>
+                          <p className="font-amiri text-2xl text-ink leading-relaxed font-bold">
+                            إلى: {letterContent.recipient_name || "صديق مخلص"}
                           </p>
-                          <p className="font-amiri text-sm text-accent mt-3">
-                            حُرر في: {new Date(letterContent.created_at).toLocaleDateString("ar")}
-                          </p>
+                          <div className="flex items-center gap-2 mt-4 text-accent/80 font-amiri italic">
+                            <span>حُرر بمدينة القاهرة في:</span>
+                            <span>{new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                          </div>
                         </div>
 
+                        {/* Title Display if it exists */}
+                        {letterContent.title && (
+                          <div className="text-center mb-10">
+                            <h2 className="font-amiri text-4xl text-secondary border-b border-gold/20 inline-block px-12 pb-4">
+                              {letterContent.title}
+                            </h2>
+                          </div>
+                        )}
+
                         {/* Letter Content */}
-                        <div className={`font-amiri text-2xl text-ink leading-[2.5] whitespace-pre-wrap px-4 md:px-8 py-6 ${
-                          letterContent.content_type === "poetry" ? "text-center" : "text-justify"
+                        <div className={`font-amiri text-3xl text-ink leading-[2.6] whitespace-pre-wrap px-6 md:px-12 py-8 drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)] ${
+                          letterContent.content_type === "poetry" ? "text-center italic" : "text-justify"
                         }`}>
-                          {letterContent.content || "الرسالة فارغة..."}
+                          {letterContent.content || "الرسالة في طريقها للتجلي..."}
                         </div>
 
                         {/* Royal Footer / Signature */}
-                        <div className="text-center mt-12">
-                          <img src={waxSeal} alt="" className="w-16 h-16 mx-auto opacity-90 mix-blend-multiply" />
-                          <p className="font-cinzel-decorative text-2xl text-secondary mt-2">
+                        <div className="text-center mt-16 border-t border-gold/10 pt-12">
+                          <motion.img 
+                            src={waxSeal} 
+                            alt="" 
+                            className="w-24 h-24 mx-auto opacity-100 drop-shadow-lg mb-4" 
+                            initial={{ scale: 0, rotate: -45 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 200, delay: 2 }}
+                          />
+                          <p className="font-cinzel-decorative text-4xl text-secondary drop-shadow-sm tracking-wider">
                             أحمد
                           </p>
+                          <p className="font-amiri text-sm text-accent mt-2 opacity-60">عُهود مـكـتـوب © 2026</p>
                         </div>
                       </motion.div>
                     ) : (

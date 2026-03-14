@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { data: letterData, error: letterError } = await supabase
       .from("letters")
-      .select("id, content_encrypted, content_type, order_index, created_at, recipient_id, unlock_at, recipients(display_label, name_encrypted)")
+      .select("id, title, content_encrypted, content_type, order_index, created_at, recipient_id, unlock_at, recipients(display_label, name_encrypted)")
       .eq("id", letter_id)
       .eq("is_active", true)
       .single();
@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         letter: {
           id: letterData.id,
+          title: letterData.title,
           content: finalContent,
           content_type: letterData.content_type,
           order_index: letterData.order_index,
