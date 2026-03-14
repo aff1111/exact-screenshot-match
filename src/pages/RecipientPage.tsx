@@ -21,6 +21,7 @@ interface LetterContent {
   content: string;
   content_type: string;
   created_at: string;
+  recipient_name?: string;
 }
 
 const RecipientPage = () => {
@@ -379,20 +380,31 @@ const RecipientPage = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.5, duration: 1 }}
+                        className="relative"
                       >
-                        <div className={`font-amiri text-lg text-ink leading-loose whitespace-pre-wrap ${
-                          letterContent.content_type === "poetry" ? "text-center" : ""
-                        }`}>
-                          {letterContent.content}
+                        {/* Royal Header */}
+                        <div className="text-right mb-10 border-b-2 border-double border-gold/30 pb-6 pr-4 border-r-4 border-r-gold/40">
+                          <p className="font-cinzel-decorative text-2xl text-secondary mb-2">من: أحمد</p>
+                          <p className="font-amiri text-xl text-ink">
+                            إلى: {letterContent.recipient_name || "صديقي الغالي"}
+                          </p>
+                          <p className="font-amiri text-sm text-accent mt-3">
+                            حُرر في: {new Date(letterContent.created_at).toLocaleDateString("ar")}
+                          </p>
                         </div>
 
-                        {/* Signature */}
-                        <div className="mt-8 pt-4 border-t border-gold/20">
-                          <p className="font-amiri text-sm text-accent text-left">
-                            بتاريخ {new Date(letterContent.created_at).toLocaleDateString("ar")}
-                          </p>
-                          <p className="font-cinzel-decorative text-lg text-secondary text-left mt-1">
-                            — أحمد
+                        {/* Letter Content */}
+                        <div className={`font-amiri text-2xl text-ink leading-[2.5] whitespace-pre-wrap px-4 md:px-8 py-6 min-h-[200px] ${
+                          letterContent.content_type === "poetry" ? "text-center" : "text-justify"
+                        }`}>
+                          {letterContent.content || "الرسالة فارغة..."}
+                        </div>
+
+                        {/* Royal Footer / Signature */}
+                        <div className="mt-12 pt-6 border-t-2 border-double border-gold/30 text-center">
+                          <img src={waxSeal} alt="" className="w-12 h-12 mx-auto mb-3 opacity-80" />
+                          <p className="font-cinzel-decorative text-xl text-secondary">
+                            أحمد
                           </p>
                         </div>
                       </motion.div>

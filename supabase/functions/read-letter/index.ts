@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { data: letterData } = await supabase
       .from("letters")
-      .select("id, content_encrypted, content_type, order_index, created_at")
+      .select("id, content_encrypted, content_type, order_index, created_at, recipient_id")
       .eq("id", letter_id)
       .eq("is_active", true)
       .single();
@@ -89,6 +89,22 @@ Deno.serve(async (req) => {
       p_letter_id: letter_id,
       p_session_token: session_token,
     });
+    
+    // Fallback if decryption returns null (e.g. no key configured)
+    const finalContent = decrypted || letterData.content_encrypted;
+
+    // Get recipient name
+    const { data: recipientData } = await supabase
+      .from("recipients")
+      .select("display_label, name_encrypted")
+      .eq("id", letterData.recipient_id)
+      .single();
+
+    const { data: decryptedName } = await supabase.rpc("decrypt_recipient_name", {
+      p_recipient_id: letterData.recipient_id,
+    });
+    
+    const finalName = decryptedName || (recipientData ? (recipientData.name_encrypted || recipientData.display_label) : "صديقي");
 
     // Get existing replies for this letter
     const { data: replies } = await supabase
@@ -101,10 +117,11 @@ Deno.serve(async (req) => {
       JSON.stringify({
         letter: {
           id: letterData.id,
-          content: decrypted,
+          content: finalContent,
           content_type: letterData.content_type,
           order_index: letterData.order_index,
           created_at: letterData.created_at,
+          recipient_name: finalName
         },
         replies: replies || [],
       }),
