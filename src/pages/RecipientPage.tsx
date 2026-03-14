@@ -28,6 +28,7 @@ interface LetterContent {
   content_type: string;
   created_at: string;
   recipient_name?: string;
+  sender_name?: string;
 }
 
 const RecipientPage = () => {
@@ -153,7 +154,8 @@ const RecipientPage = () => {
       } else {
         setLetterContent({
           ...data,
-          content: data.content || data.content_encrypted || ""
+          content: data.content || data.content_encrypted || "",
+          sender_name: data.sender_name || "أحمد"
         });
       }
     } catch {
@@ -433,44 +435,48 @@ const RecipientPage = () => {
                           transition={{ delay: 0.5, duration: 1 }}
                           className="flex flex-col h-full overflow-hidden"
                         >
-                          <div className="text-right mb-6 md:mb-10 border-b border-gold/20 pb-4 md:pb-6 relative">
-                            <p className="font-amiri text-lg md:text-xl text-secondary mb-1 opacity-80 italic">من: أحمد</p>
-                            <p className="font-amiri text-xl md:text-2xl text-ink leading-relaxed font-bold">
-                              إلى: {letterContent.recipient_name || "صديق مخلص"}
+                          {/* Top Right: Sender & Date */}
+                          <div className="flex flex-col items-start mb-6 text-right">
+                            <p className="font-amiri text-base md:text-lg text-secondary font-bold">
+                              {letterContent.sender_name || "أحمد"}
                             </p>
-                            <div className="mt-2 text-[10px] md:text-xs text-accent/60 font-amiri italic">
-                              <span>حُرر في: </span>
-                              <span>{new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                            </div>
+                            <p className="font-amiri text-[10px] md:text-xs text-accent mt-1 opacity-70">
+                              {new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
                           </div>
 
+                          {/* Center Top: Title */}
                           {letterContent.title && (
-                            <div className="text-center mb-6 md:mb-8">
-                              <h2 className="font-amiri text-2xl md:text-3xl text-secondary border-b border-gold/10 inline-block px-8 pb-2">
+                            <div className="text-center mb-10">
+                              <h2 className="font-amiri text-2xl md:text-3xl text-ink font-bold border-b-2 border-gold/10 inline-block px-12 pb-2">
                                 {letterContent.title}
                               </h2>
                             </div>
                           )}
 
-                          <div className={`flex-1 font-amiri text-xl md:text-2xl text-ink leading-[1.8] md:leading-[2.2] whitespace-pre-wrap overflow-y-auto scrollbar-hide ${
-                            letterContent.content_type === "poetry" ? "text-center italic" : "text-justify"
-                          }`}>
+                          {/* Middle: Letter Body content */}
+                          <div className={`flex-1 font-amiri text-xl md:text-2xl text-ink leading-[1.8] md:leading-[2.2] whitespace-pre-wrap overflow-y-auto scrollbar-hide text-right px-2`}>
                             {letterContent.content || "الرسالة في طريقها للتجلي..."}
                           </div>
 
-                          <div className="text-center mt-auto pt-8">
+                          {/* Lower: Recipient Name */}
+                          <div className="mt-8 mb-4 text-right">
+                            <p className="font-amiri text-lg md:text-xl text-secondary border-r-4 border-gold/40 pr-3 py-1 font-bold">
+                              إلى: {letterContent.recipient_name || "صديق مخلص"}
+                            </p>
+                          </div>
+
+                          {/* Bottom Center: Wax Seal */}
+                          <div className="text-center mt-auto pt-6">
                             <motion.img 
                               src={waxSeal} 
-                              alt="" 
-                              className="w-16 h-16 md:w-20 md:h-20 mx-auto opacity-100 drop-shadow-md mb-2" 
+                              alt="Royal Wax Seal" 
+                              className="w-16 h-16 md:w-20 md:h-20 mx-auto opacity-100 drop-shadow-md" 
                               initial={{ scale: 0, rotate: -45 }}
                               animate={{ scale: 1, rotate: 0 }}
                               transition={{ type: "spring", stiffness: 200, delay: 2 }}
                             />
-                            <p className="font-cinzel text-xl md:text-2xl text-secondary tracking-wider opacity-90">
-                              أحمد
-                            </p>
-                            <p className="font-amiri text-[8px] md:text-[10px] text-accent mt-1 opacity-40 uppercase tracking-widest text-center">Maktoob © 2026</p>
+                            <p className="font-amiri text-[8px] mt-2 text-accent opacity-40 uppercase tracking-widest text-center">Maktoob © 2026</p>
                           </div>
                         </motion.div>
                       ) : (
