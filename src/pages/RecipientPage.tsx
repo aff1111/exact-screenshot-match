@@ -435,14 +435,18 @@ const RecipientPage = () => {
                           transition={{ delay: 0.5, duration: 1 }}
                           className="flex flex-col h-full overflow-hidden"
                         >
-                          {/* Top Right: Sender & Date */}
-                          <div className="flex flex-col items-start mb-6 text-right">
-                            <p className="font-amiri text-base md:text-lg text-secondary font-bold">
-                              {letterContent.sender_name || "أحمد"}
-                            </p>
-                            <p className="font-amiri text-[10px] md:text-xs text-accent mt-1 opacity-70">
-                              {new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
+                          {/* Letter Header: Sender (Right) & Date (Left) */}
+                          <div className="flex justify-between items-start mb-8 text-right underline-offset-4">
+                            <div className="flex flex-col items-start order-2">
+                              <p className="font-amiri text-base md:text-lg text-secondary font-bold">
+                                من: {letterContent.sender_name || "أحمد"}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end order-1">
+                              <p className="font-amiri text-[10px] md:text-xs text-accent opacity-70">
+                                {new Date(letterContent.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric' })}
+                              </p>
+                            </div>
                           </div>
 
                           {/* Center Top: Title */}
@@ -455,19 +459,19 @@ const RecipientPage = () => {
                           )}
 
                           {/* Middle: Letter Body content */}
-                          <div className={`flex-1 font-amiri text-xl md:text-2xl text-ink leading-[1.8] md:leading-[2.2] whitespace-pre-wrap overflow-y-auto scrollbar-hide text-right px-2`}>
+                          <div className={`flex-1 font-amiri text-xl md:text-2xl text-ink leading-[1.8] md:leading-[2.2] whitespace-pre-wrap overflow-y-auto scrollbar-hide text-right px-2 min-h-[200px]`}>
                             {letterContent.content || "الرسالة في طريقها للتجلي..."}
                           </div>
 
                           {/* Lower: Recipient Name */}
-                          <div className="mt-8 mb-4 text-right">
+                          <div className="mt-10 mb-6 text-right">
                             <p className="font-amiri text-lg md:text-xl text-secondary border-r-4 border-gold/40 pr-3 py-1 font-bold">
                               إلى: {letterContent.recipient_name || "صديق مخلص"}
                             </p>
                           </div>
 
                           {/* Bottom Center: Wax Seal */}
-                          <div className="text-center mt-auto pt-6">
+                          <div className="text-center mt-auto pt-4 pb-2">
                             <motion.img 
                               src={waxSeal} 
                               alt="Royal Wax Seal" 
@@ -476,7 +480,7 @@ const RecipientPage = () => {
                               animate={{ scale: 1, rotate: 0 }}
                               transition={{ type: "spring", stiffness: 200, delay: 2 }}
                             />
-                            <p className="font-amiri text-[8px] mt-2 text-accent opacity-40 uppercase tracking-widest text-center">Maktoob © 2026</p>
+                            <p className="font-amiri text-[8px] mt-2 text-accent opacity-30 uppercase tracking-widest text-center">Maktoob © 2026</p>
                           </div>
                         </motion.div>
                       ) : (
