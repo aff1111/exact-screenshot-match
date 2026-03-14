@@ -64,6 +64,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { user: signedInUser } = await AuthService.signIn(email, password);
       setUser(signedInUser);
+      try {
+        // Ensure auth session/user is available in client
+        const { data: { user: authUserData } } = await require('@/services/api').supabase.auth.getUser();
+        setAuthUser(authUserData);
+      } catch (e) {
+        Logger.warn('Could not retrieve auth user after signIn', { error: e });
+      }
       Logger.info('User signed in successfully', { email });
     } finally {
       setIsLoading(false);
