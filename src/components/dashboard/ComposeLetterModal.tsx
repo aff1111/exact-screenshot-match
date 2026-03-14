@@ -17,6 +17,10 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
   const [selectedRecipient, setSelectedRecipient] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [securityQuestions, setSecurityQuestions] = useState<Array<{ question: string; answer: string }>>([
+    { question: "", answer: "" },
+    { question: "", answer: "" },
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +29,17 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
     }
 
     try {
-      await sendLetter({ recipientId: selectedRecipient, title, content });
+      const questions = securityQuestions
+        .filter((q) => q.question.trim() && q.answer.trim())
+        .map((q) => ({ question: q.question.trim(), answer: q.answer.trim() }));
+
+      await sendLetter({
+        recipientId: selectedRecipient,
+        title,
+        content,
+        securityQuestions: questions,
+      });
+
       toast.success("تم إرسال الرسالة إلى الخزنة الملكية");
       onSuccess();
     } catch (err: any) {
@@ -86,6 +100,38 @@ const ComposeLetterModal = ({ adminId, recipients, onClose, onSuccess }: Props) 
                   className="input-royal w-full"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {securityQuestions.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <label className="font-cinzel text-[10px] tracking-widest uppercase text-ink/40">سؤال أمان {index + 1}</label>
+                  <input
+                    type="text"
+                    value={item.question}
+                    onChange={(e) => {
+                      const updated = [...securityQuestions];
+                      updated[index].question = e.target.value;
+                      setSecurityQuestions(updated);
+                    }}
+                    placeholder="ما هو اسمك المفضل..."
+                    className="input-royal w-full"
+                    dir="rtl"
+                  />
+                  <input
+                    type="text"
+                    value={item.answer}
+                    onChange={(e) => {
+                      const updated = [...securityQuestions];
+                      updated[index].answer = e.target.value;
+                      setSecurityQuestions(updated);
+                    }}
+                    placeholder="الإجابة السرية..."
+                    className="input-royal w-full"
+                    dir="rtl"
+                  />
+                </div>
+              ))}
             </div>
 
             <div className="space-y-3">

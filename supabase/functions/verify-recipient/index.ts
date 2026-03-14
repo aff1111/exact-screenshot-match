@@ -71,11 +71,36 @@ Deno.serve(async (req) => {
       return errorResponse(403, "Access denied");
     }
 
-    // Increment use_count
+    // Increment use_count safely
+    const { data: recipientInfo } = await supabase
+      .from("recipients")
+      .select("use_count")
+      .eq("id", recipientId)
+      .single();
+
+    const currentCount = (recipientInfo?.use_count || 0) as number;
     await supabase
       .from("recipients")
-      .update({ use_count: undefined }) // We'll use raw SQL via rpc instead
+      .update({ use_count: currentCount + 1 })
       .eq("id", recipientId);
+
+    // Get recipient metadata and decrypted name if possible
+    const { data: recipientData } = await supabase
+      .from("recipients")
+      .select("id, display_label, name_encrypted, use_count")
+      .eq("id", recipientId)
+      .single();
+
+    let recipientDisplay = recipientData?.display_label || "صديقي";
+
+    try {
+      const { data: decryptedName } = await supabase.rpc("decrypt_recipient_name", {
+        p_recipient_id: recipientId,
+      });
+      if (decryptedName) recipientDisplay = decryptedName as string;
+    } catch (e) {
+      // ignore, fallback to display_label
+    }
 
     // Get letters for this recipient with their questions (no content)
     const { data: letters } = await supabase
@@ -111,6 +136,11 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         recipient_id: recipientId,
+        recipient: {
+          id: recipientData?.id,
+          display_label: recipientDisplay,
+          use_count: recipientData?.use_count || 0,
+        },
         letters: lettersWithQuestions,
       }),
       {

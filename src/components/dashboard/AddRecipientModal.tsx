@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import ParchmentCard from "@/components/ui/ParchmentCard";
 import { cn } from "@/lib/utils";
+import { RecipientService } from "@/services/api";
 
 interface Props {
   adminId: string;
@@ -23,17 +23,10 @@ const AddRecipientModal = ({ adminId, onClose, onSuccess }: Props) => {
 
     setLoading(true);
     try {
-      // Professional RPC call to generate recipient with token securely
-      const { data, error } = await supabase.from("recipients").insert({
-        display_label: label.trim(),
-        admin_id: adminId,
-        is_active: true
-      }).select().single();
-
-      if (error) throw error;
-
+      const { recipient, token } = await RecipientService.createRecipient(adminId, label.trim());
       queryClient.invalidateQueries({ queryKey: ["recipients"] });
       toast.success(`تم تسجيل ${label} كمتلقٍ ملكي`);
+      toast.success(`رابط المستلم: ${window.location.origin}/s/${token}`);
       onSuccess();
     } catch (err: any) {
       toast.error(`خطأ: ${err.message}`);
