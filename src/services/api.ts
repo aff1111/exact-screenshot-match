@@ -88,10 +88,11 @@ export class AuthService {
       });
 
       if (error) {
+        const message = error.message || 'بيانات الدخول غير صحيحة أو الحساب غير مسجل';
         throw new ApplicationError(
           ErrorCode.AUTH_INVALID_CREDENTIALS,
-          error.message,
-          'بيانات الدخول غير صحيحة'
+          message,
+          'بيانات الدخول غير صحيحة أو الحساب غير موجود، استخدم تسجيل جديد أو تأكد من بيانات الاعتماد'
         );
       }
 

@@ -22,7 +22,7 @@ const LoginPageRefactored = () => {
   // State Management
   const [step, setStep] = useState<'email' | 'security'>('email');
   const [formData, setFormData] = useState({
-    email: '',
+    email: 'ahmedromu4@gmail.com',
     password: '',
   });
   const [securityAnswers, setSecurityAnswers] = useState({
@@ -126,6 +126,8 @@ const LoginPageRefactored = () => {
         setStep('security');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.ERROR.NETWORK;
+
+        setError(`فشل تسجيل الدخول: ${errorMessage}`);
 
         // Track failed attempts
         const newAttemptCount = attemptCount + 1;
@@ -347,6 +349,27 @@ const LoginPageRefactored = () => {
                   ) : (
                     'تسجيل الدخول'
                   )}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!formData.email || !formData.password) {
+                      setError('يرجى إدخال البريد وكلمة المرور للتسجيل');
+                      return;
+                    }
+                    setIsLoading(true);
+                    try {
+                      await signUp(formData.email, formData.password);
+                      toast.success('تم إنشاء الحساب بنجاح، حاول تسجيل الدخول مجدداً');
+                    } catch (e: any) {
+                      setError(e?.message || 'فشل إنشاء الحساب');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className="w-full mt-3 bg-white/20 text-slate-900 border border-slate-300 hover:bg-white"
+                >
+                  إنشاء حساب جديد
                 </Button>
               </motion.form>
             ) : (
